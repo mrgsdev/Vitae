@@ -10,8 +10,13 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/mrgsdev/Vitae/releases/latest"><img alt="Скачать" src="https://img.shields.io/github/v/release/mrgsdev/Vitae?label=%D0%A1%D0%BA%D0%B0%D1%87%D0%B0%D1%82%D1%8C&style=for-the-badge&color=E8505B"></a>
+</p>
+
+<p align="center">
   <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-000000?logo=apple&logoColor=white">
   <img alt="Swift" src="https://img.shields.io/badge/Swift-SwiftUI%20%2B%20SwiftData-F05138?logo=swift&logoColor=white">
+  <a href="https://github.com/mrgsdev/Vitae/releases"><img alt="Скачивания" src="https://img.shields.io/github/downloads/mrgsdev/Vitae/total?label=%D1%81%D0%BA%D0%B0%D1%87%D0%B8%D0%B2%D0%B0%D0%BD%D0%B8%D0%B9&color=6E56CF"></a>
   <img alt="Язык: русский" src="https://img.shields.io/badge/%D1%8F%D0%B7%D1%8B%D0%BA-RU-555555">
   <img alt="Данные только на Mac" src="https://img.shields.io/badge/%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D0%B5-%D1%82%D0%BE%D0%BB%D1%8C%D0%BA%D0%BE%20%D0%BD%D0%B0%20Mac-E8505B">
   <img alt="MIT" src="https://img.shields.io/badge/license-MIT-3DA639">
@@ -31,7 +36,8 @@
 
 **Чего нет в личном кабинете лаборатории:** анализы из разных лабораторий в одной истории, пересчёт единиц
 (ммоль/л ↔ мг/дл, г/л ↔ г/дл), табличный ввод в стиле Numbers со вставкой столбца из Excel, распознавание
-бланков PDF и фото, резервные копии, PDF-отчёты и полная работа без интернета: данные не покидают ваш Mac.
+бланков PDF и фото, резервные копии, PDF-отчёты и работа без интернета: данные не покидают ваш Mac,
+а сеть нужна только для проверки обновлений. Обновление ставится одной кнопкой, к любой прошлой версии можно вернуться.
 
 ## Почему Vitae
 
@@ -47,6 +53,9 @@ Vitae — это curriculum vitae вашего здоровья. Приложе�
 
 - Первая версия: обследования, табличный ввод, динамика, сравнение, расходы, справочник из 63 показателей,
   импорт бланков с распознаванием текста, резервные копии, PDF-отчёты, напоминания и блокировка.
+- Обновление из приложения с GitHub и возврат к любой прошлой версии.
+
+Изменения всех версий: [Releases](https://github.com/mrgsdev/Vitae/releases).
 
 ## Содержание
 
@@ -190,6 +199,16 @@ PDF, PNG, JPG и HEIC перетаскиванием или через ⌘I. Т�
 
 <p align="center"><img src="docs/screenshots/settings.jpg" alt="Настройки" width="80%"></p>
 
+### 🔄 Обновление и другие версии
+
+Vitae сама находит новый релиз на GitHub при запуске и не чаще двух раз в сутки, показывает «Что нового»
+и ставит обновление одной кнопкой. Перед установкой проверяется, что внутри то же приложение с той же подписью,
+и автоматически сохраняется резервная копия базы. Ненужную версию можно пропустить или отложить.
+
+«Другие версии…» в настройках («Обновления») показывает все релизы с описанием: к прошлой версии можно вернуться,
+а любую другую поставить. Перед установкой окно объясняет, что изменится. Автоматическую проверку можно выключить;
+в сеть уходит только запрос списка релизов, медицинские данные никуда не отправляются.
+
 ### ⌨️ Горячие клавиши
 
 Все разделы и действия с клавиатуры. Список есть в меню «Справка» (⌘?).
@@ -226,32 +245,28 @@ PDF, PNG, JPG и HEIC перетаскиванием или через ⌘I. Т�
 - Статус считается только по референсу из бланка конкретной лаборатории. Нет референса — «Нет данных для оценки».
   Значения вида «<0,5» оцениваются, только если весь возможный интервал однозначно попадает в одну зону.
 - Каждый результат хранит свои название, единицу и референс, поэтому история не меняется при правке справочника.
-- Данные хранятся только на Mac, в песочнице приложения. Регистрации и сервера нет, сетевых запросов нет,
-  медицинские значения не пишутся в системный журнал. Документы лежат файлами с правами только владельца.
+- Данные хранятся только на Mac, в `~/Library/Application Support/Vitae`. Регистрации и сервера нет.
+  Единственный сетевой запрос — проверка обновлений на GitHub, его можно выключить. Медицинские значения
+  не пишутся в системный журнал. Документы лежат файлами с правами только владельца.
 - Удаление всегда с подтверждением, перед удалением всех данных создаётся страховочная копия.
 
 ## Установка
 
-Готовой сборки на странице Releases пока нет: приложение собирается из исходников за пару минут.
-
-1. Установите Xcode 16 или новее и откройте проект:
+1. Скачайте `Vitae-<версия>.dmg` со страницы [Releases](https://github.com/mrgsdev/Vitae/releases/latest),
+   откройте его и перетащите **Vitae** на папку «Программы» в том же окне.
+2. Приложение не нотарифицировано Apple, поэтому при первом запуске macOS его не откроет. Откройте
+   «Системные настройки → Конфиденциальность и безопасность», внизу нажмите «Всё равно открыть» у Vitae
+   и подтвердите паролем. Или одной командой в Терминале:
 
    ```bash
-   open Vitae.xcodeproj
+   xattr -dr com.apple.quarantine /Applications/Vitae.app
    ```
 
-2. Выберите схему **Vitae** и нажмите Run (⌘R). Сборка подписывается локально («Sign to Run Locally»),
-   аккаунт разработчика не нужен.
+Дальше Vitae обновляется сама.
 
-Чтобы положить приложение в «Программы», соберите Release и скопируйте его:
-
-```bash
-xcodebuild -project Vitae.xcodeproj -scheme Vitae -configuration Release -derivedDataPath build build
-```
-
-```bash
-cp -R build/Build/Products/Release/Vitae.app /Applications/
-```
+Если вы раньше запускали Vitae, собранную из исходников с песочницей, при первом запуске новой версии база,
+документы и настройки скопируются в `~/Library/Application Support/Vitae`. Прежняя копия остаётся на месте,
+macOS может один раз спросить разрешение на доступ к данным приложения.
 
 ## Для разработчиков
 
@@ -261,20 +276,53 @@ cp -R build/Build/Products/Release/Vitae.app /Applications/
 Нужны Xcode 16+ и macOS 14+. Сторонних зависимостей нет: только системные фреймворки (SwiftUI, SwiftData,
 Swift Charts, PDFKit, Vision, Quick Look, UserNotifications, LocalAuthentication, CryptoKit).
 
-Приложение работает в песочнице с правами на выбранные пользователем файлы и печать
-(`Config/Vitae.entitlements`). Для распространения нужен Developer ID: в Target **Vitae** → Signing &
-Capabilities выберите свой Team, при необходимости смените Bundle ID (`com.mrgsdev.Vitae`) на свой
-и нотарифицируйте сборку.
+```bash
+open Vitae.xcodeproj
+```
+
+Приложение подписывается сертификатом «Apple Development» команды `Y2Y34S7QM3` и работает без песочницы:
+иначе оно не смогло бы заменить само себя при обновлении.
+
+1. Xcode → Settings → Accounts: добавить Apple ID (подойдёт бесплатный Personal Team).
+2. Targets **Vitae**, **VitaeTests** и **VitaeUITests** → Signing & Capabilities: выбрать свой Team. Если Xcode
+   ругается на Bundle ID, поменять его на свой, например `com.<имя>.Vitae`.
+3. Нажать Run (⌘R).
+
+Обновление из приложения проверяет, что новая версия подписана тем же сертификатом. Сборки с другим Team
+не смогут обновить друг друга, такая версия ставится вручную из `.dmg`.
+
+</details>
+
+<details>
+<summary><b>Выпуск новой версии</b></summary>
+
+1. Project **Vitae** → Build Settings: поднять **Marketing Version** (например, `1.1`) и **Current Project
+   Version** (`2`).
+2. Собрать файлы для релиза, появятся `build/Vitae-<версия>.dmg` и `build/Vitae-<версия>.zip`:
+
+   ```bash
+   ./scripts/make-release.sh
+   ```
+
+3. GitHub → Releases → Draft a new release: тег `v<версия>` (например, `v1.1`), название `Vitae 1.1`,
+   в описании список изменений (его увидят в «Что нового»), приложить оба файла из шага 2, Publish.
+   `.dmg` нужен для скачивания, `.zip` — для обновления из приложения: читать подключённый образ macOS
+   разрешает только с согласия пользователя, поэтому новая версия ставится из zip.
+
+Приложение берёт последний опубликованный релиз; черновики и pre-release до пользователей не доходят,
+ими удобно проверить обновление на себе. Подписывать новую версию нужно тем же сертификатом, иначе Vitae
+откажется её ставить.
 
 </details>
 
 <details>
 <summary><b>Тесты</b></summary>
 
-Unit-тесты на Swift Testing: 72 теста в 14 наборах. Проверяются статусы и референсы, разбор чисел,
+Unit-тесты на Swift Testing: 80 тестов в 16 наборах. Проверяются статусы и референсы, разбор чисел,
 конвертация единиц, динамика, сравнение, расходы, табличный ввод, хранилище, файлы, JSON-бэкап
-(в том числе подмена данных и будущая версия формата), CSV, PDF, OCR с полным циклом Vision и повторное
-открытие базы на диске.
+(в том числе подмена данных и будущая версия формата), CSV, PDF, OCR с полным циклом Vision, повторное
+открытие базы на диске, обновление (версии, список релизов, распаковка, проверка подписи) и перенос данных
+из песочницы.
 
 ```bash
 xcodebuild -project Vitae.xcodeproj -scheme Vitae -destination 'platform=macOS,arch=arm64' test -only-testing:VitaeTests
@@ -307,7 +355,7 @@ Vitae/
     Logic/        оценка по референсу, конвертация единиц, динамика, сравнение, расходы, сопоставление названий
     Draft/        черновик обследования, проверка, вставка и массовое заполнение таблицы
   Features/     Dashboard, Examinations, TestCatalog, TestResults, Dynamics, Comparison, Expenses,
-                DocumentImport, ImportExport, Reminders, Settings
+                DocumentImport, ImportExport, Reminders, Settings, Updates
   Services/     файлы, JSON-бэкап, CSV, PDF-отчёты, OCR и разбор бланков, уведомления, блокировка, печать
   Shared/       тема, общие компоненты, мосты к AppKit
   Resources/    иконка и цвет акцента
@@ -315,6 +363,7 @@ Tests/
   VitaeTests/   unit-тесты (Swift Testing)
   VitaeUITests/ UI-тесты (XCTest)
 Config/         права приложения
+scripts/        make-release.sh: сборка .dmg и .zip для релиза
 ```
 
 Расчёты работают с неизменяемыми снимками (`ResultSnapshot`, `ExpenseSnapshot`), поэтому покрываются тестами
@@ -326,16 +375,22 @@ Config/         права приложения
 <details>
 <summary><b>Отладка</b></summary>
 
-- Технический журнал без медицинских данных: `log stream --predicate 'subsystem == "Vitae"'`
-- Данные приложения: `~/Library/Containers/com.mrgsdev.Vitae/Data/Library/Application Support/Vitae/`
-  (`Vitae.store`, `Attachments/`, `Backups/`).
+- Технический журнал без медицинских данных: `/usr/bin/log stream --predicate 'subsystem == "Vitae"'`
+  (в zsh `log` — встроенная команда, поэтому путь полностью).
+- Данные приложения: `~/Library/Application Support/Vitae/` (`Vitae.store`, `Attachments/`, `Backups/`).
 - Аргументы запуска (Scheme → Run → Arguments, только Debug):
   - `-uiTesting`: база в памяти, реальные данные не затрагиваются;
   - `-uiTestingFixture`: заполнить тестовыми обследованиями;
   - `-uiTestingSection examinations`: открыть раздел (`dashboard`, `dynamics`, `expenses`, `catalog`, …);
   - `-uiTestingAppearance light` или `dark`: тема;
   - `-uiTestingEditor new`, `edit` или `repeat`: открыть редактор;
-  - `-uiTestingImport /путь/к/бланку.png`: сразу открыть распознавание документа.
+  - `-uiTestingImport /путь/к/бланку.png`: сразу открыть распознавание документа;
+  - `-updateFeedURL file:///путь/feed.json` и `-updateReleasesURL file:///путь/releases.json`: брать последний
+    релиз и список релизов из локальных JSON в формате GitHub API (ссылки на zip тоже могут быть `file://`);
+  - `-updateAutoInstall YES`: сразу поставить найденное обновление без окна;
+  - `-updateInstallVersion 1.0`: поставить указанную версию из списка (проверка отката);
+  - `-updateNoRelaunch YES`: после установки просто закрыться;
+  - `-updateResetSkipped YES`: снять отметку о пропущенной версии и закрыться.
 
 </details>
 
