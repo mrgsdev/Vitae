@@ -35,6 +35,12 @@ struct MainWindowView: View {
             if let newValue { storedSelection = newValue.rawValue }
         }
         .onChange(of: environment.pendingRoute) { _, _ in consumePendingRoute() }
+        .task {
+            await offerUpdate()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            Task { await offerUpdate() }
+        }
         .onChange(of: controlActiveState) { _, state in
             if state == .key { modelContext.undoManager = undoManager }
         }
@@ -45,7 +51,24 @@ struct MainWindowView: View {
                     .padding(10)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(.orange.opacity(0.15))
+            } else if let notice = environment.migrationNotice {
+                HStack {
+                    Label(notice, systemImage: "arrow.right.doc.on.clipboard")
+                        .font(.callout)
+                        .textSelection(.enabled)
+                    Spacer()
+                    Button("Скрыть") { environment.migrationNotice = nil }
+                }
+                .padding(10)
+                .background(Color.accentColor.opacity(0.1))
             }
+        }
+    }
+
+    /// Проверка при запуске и не чаще двух раз в сутки; окно открывается, только если есть новая версия.
+    private func offerUpdate() async {
+        if await Updater.shared.checkInBackground() {
+            openWindow(id: "update")
         }
     }
 

@@ -30,6 +30,22 @@ struct VitaeApp: App {
         .defaultSize(width: 1280, height: 820)
         .windowToolbarStyle(.unifiedCompact)
 
+        Window("Обновление Vitae", id: "update") {
+            UpdateView()
+                .environment(\.locale, AppLocale.locale)
+        }
+        .windowResizability(.contentSize)
+        .defaultPosition(.center)
+        .commandsRemoved()
+
+        Window("Версии Vitae", id: "versions") {
+            VersionsView()
+                .environment(\.locale, AppLocale.locale)
+        }
+        .windowResizability(.contentSize)
+        .defaultPosition(.center)
+        .commandsRemoved()
+
         Window("Справка Vitae", id: "help") {
             HelpView()
                 .environment(\.locale, AppLocale.locale)

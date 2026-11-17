@@ -19,6 +19,10 @@ struct VitaeCommands: Commands {
     var body: some Commands {
         CommandGroup(replacing: .appInfo) {
             Button("О программе Vitae") { AboutPanel.show() }
+            Button("Проверить обновления…") {
+                openWindow(id: "update")
+                Task { await Updater.shared.checkNow() }
+            }
         }
 
         CommandGroup(replacing: .newItem) {

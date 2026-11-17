@@ -19,6 +19,8 @@ struct SettingsView: View {
                 .tabItem { Label("Резервные копии", systemImage: "externaldrive") }
             DataSettingsView()
                 .tabItem { Label("Данные", systemImage: "internaldrive") }
+            UpdatesSettingsView()
+                .tabItem { Label("Обновления", systemImage: "arrow.down.app") }
         }
         .padding(isInline ? 20 : 0)
         .navigationTitle("Настройки")
@@ -230,8 +232,8 @@ struct SecuritySettingsView: View {
                      : "На этом Mac не настроены Touch ID или пароль учётной записи — блокировка недоступна.")
             }
             Section("Хранение данных") {
-                Label("Все данные хранятся локально в контейнере приложения (Application Support).", systemImage: "internaldrive")
-                Label("Регистрация и сервер не требуются, сетевые запросы не выполняются.", systemImage: "wifi.slash")
+                Label("Все данные хранятся локально: ~/Library/Application Support/Vitae.", systemImage: "internaldrive")
+                Label("Регистрация и сервер не требуются. Сеть нужна только для проверки обновлений на GitHub, медицинские данные никуда не отправляются.", systemImage: "wifi.slash")
                 Label("Медицинские значения не записываются в системный журнал.", systemImage: "doc.text.magnifyingglass")
                 Label("Файлы документов сохраняются с правами доступа только для владельца и с классом защиты файлов macOS. Для шифрования диска включите FileVault.",
                       systemImage: "lock.doc")
@@ -351,5 +353,34 @@ struct DataSettingsView: View {
         } catch {
             info = "Не удалось удалить данные: \(error.localizedDescription)"
         }
+    }
+}
+
+struct UpdatesSettingsView: View {
+    @Environment(\.openWindow) private var openWindow
+    @AppStorage(Updater.automaticChecksKey) private var automaticChecks = true
+
+    var body: some View {
+        Form {
+            Section {
+                LabeledContent("Установлена версия", value: Updater.currentVersion)
+                Toggle("Проверять обновления автоматически", isOn: $automaticChecks)
+                HStack {
+                    Button("Проверить обновления…") {
+                        openWindow(id: "update")
+                        Task { await Updater.shared.checkNow() }
+                    }
+                    Button("Другие версии…") { openWindow(id: "versions") }
+                }
+            } footer: {
+                Text("Vitae проверяет релизы на GitHub при запуске и не чаще двух раз в сутки. Обновление ставится одной кнопкой, " +
+                     "перед установкой создаётся резервная копия базы. В «Других версиях» можно вернуться к любой прошлой версии.")
+            }
+            Section("Что отправляется в сеть") {
+                Label("Только запрос списка релизов и загрузка архива приложения с github.com. Обследования, результаты и документы не передаются.",
+                      systemImage: "lock.shield")
+            }
+        }
+        .formStyle(.grouped)
     }
 }

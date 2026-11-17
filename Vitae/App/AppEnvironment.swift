@@ -16,6 +16,8 @@ final class AppEnvironment {
     let ocr = OCRService()
     /// Ошибка открытия хранилища (данные на диске не изменяются).
     var startupError: String?
+    /// Сообщение о переносе данных из прежней версии (с песочницей).
+    var migrationNotice: String?
     /// Действие, ожидающее открытия главного окна (например, импорт из меню без открытых окон).
     var pendingRoute: PendingRoute?
 
@@ -24,6 +26,18 @@ final class AppEnvironment {
     private init() {
         let mode = RunMode.current
         var openError: String?
+        var notice: String?
+        if mode == .normal {
+            switch LegacyDataMigration.migrateIfNeeded() {
+            case .migrated:
+                notice = "Данные перенесены в новую папку приложения. Прежняя копия осталась на месте: \(LegacyDataMigration.legacyRoot.path)"
+            case .failed(let reason):
+                notice = "Не удалось перенести данные из прежней версии: \(reason). Исходные файлы не изменены: \(LegacyDataMigration.legacyRoot.path)"
+            case .notNeeded:
+                break
+            }
+            LegacyDataMigration.migratePreferencesIfNeeded()
+        }
         let container: ModelContainer
         do {
             container = try PersistenceController.makeContainer(inMemory: mode.usesInMemoryStore)
@@ -35,6 +49,7 @@ final class AppEnvironment {
         }
         self.container = container
         self.startupError = openError
+        self.migrationNotice = notice
 
         let attachmentsURL = mode == .normal
             ? AppDirectories.attachments
@@ -74,6 +89,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             UNUserNotificationCenter.current().delegate = self
         }
         environment.lock.lockOnLaunchIfNeeded()
+        #if DEBUG
+        // Отладка обновления без интерфейса: не зависит от того, открылось ли окно.
+        Task { @MainActor in await Updater.shared.runDebugAutomation() }
+        #endif
         Task { @MainActor in
             AutoBackupService.runIfNeeded(context: environment.context, fileStorage: environment.fileStorage)
             let reminders = (try? environment.context.fetch(FetchDescriptor<Reminder>())) ?? []
