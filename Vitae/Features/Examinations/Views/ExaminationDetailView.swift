@@ -102,6 +102,9 @@ struct ExaminationDetailView: View {
         .onAppear {
             #if DEBUG
             if let initial = UITestingHooks.initialDetailTab { tab = initial }
+            if UITestingHooks.selectsFirstResult {
+                selectedResultID = examination.sortedResults.first { !$0.rawValue.isEmpty }?.id
+            }
             #endif
         }
         .navigationTitle(examination.title)

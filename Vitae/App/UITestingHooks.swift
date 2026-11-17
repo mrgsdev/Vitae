@@ -11,7 +11,9 @@ enum UITestingHooks {
     private static var isActive: Bool { RunMode.current == .uiTesting }
 
     static func applyAppearance() {
-        guard isActive, let value = defaults.string(forKey: "uiTestingAppearance") else { return }
+        guard isActive else { return }
+        NSApp.activate(ignoringOtherApps: true)
+        guard let value = defaults.string(forKey: "uiTestingAppearance") else { return }
         NSApp.appearance = NSAppearance(named: value == "light" ? .aqua : .darkAqua)
     }
 
@@ -26,6 +28,7 @@ enum UITestingHooks {
         }
         if let code = defaults.string(forKey: "uiTestingIndicator") {
             navigation.dynamics.selectedCode = code
+            navigation.catalog.selection = code
         }
         if let path = defaults.string(forKey: "uiTestingImport") {
             navigation.importDocument(URL(fileURLWithPath: path))
@@ -33,6 +36,11 @@ enum UITestingHooks {
         let latest = ExaminationStore(context: context).allExaminations().first { $0.status != .draft }
         if defaults.bool(forKey: "uiTestingOpenLatest"), let latest {
             navigation.openExamination(latest.id)
+        }
+        if defaults.bool(forKey: "uiTestingOpenRichest"),
+           let richest = ExaminationStore(context: context).allExaminations()
+            .filter({ $0.status != .draft }).max(by: { $0.results.count < $1.results.count }) {
+            navigation.openExamination(richest.id)
         }
         if defaults.bool(forKey: "uiTestingInspector") {
             navigation.examinations.showInspector = true
@@ -47,6 +55,8 @@ enum UITestingHooks {
         default: break
         }
     }
+
+    static var selectsFirstResult: Bool { isActive && defaults.bool(forKey: "uiTestingSelectResult") }
 
     static var initialDetailTab: ExaminationDetailTab? {
         guard isActive, let value = defaults.string(forKey: "uiTestingTab") else { return nil }
