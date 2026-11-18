@@ -6,6 +6,9 @@ struct CardHeader: View {
     let title: String
     var systemImage: String?
     var trailing: String?
+    /// Ссылка-действие справа в заголовке, например «Все показатели».
+    var actionTitle: String?
+    var action: (() -> Void)?
 
     var body: some View {
         HStack(spacing: 6) {
@@ -19,6 +22,16 @@ struct CardHeader: View {
             if let trailing {
                 Text(trailing).font(.caption)
             }
+            if let actionTitle, let action {
+                Button(action: action) {
+                    HStack(spacing: 2) {
+                        Text(actionTitle)
+                        Image(systemName: "chevron.right").imageScale(.small)
+                    }
+                    .font(.callout)
+                }
+                .buttonStyle(.link)
+            }
         }
         .foregroundStyle(.secondary)
     }
@@ -28,12 +41,14 @@ struct Card<Content: View>: View {
     var title: String?
     var systemImage: String?
     var trailing: String?
+    var actionTitle: String?
+    var action: (() -> Void)?
     @ViewBuilder var content: Content
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if let title {
-                CardHeader(title: title, systemImage: systemImage, trailing: trailing)
+                CardHeader(title: title, systemImage: systemImage, trailing: trailing, actionTitle: actionTitle, action: action)
             }
             content
         }
@@ -112,6 +127,7 @@ struct ChangeLabel: View {
     let absolute: Double
     let percent: Double?
     var unit: String = ""
+    var font: Font = .callout
 
     var body: some View {
         HStack(spacing: 4) {
@@ -122,7 +138,7 @@ struct ChangeLabel: View {
                 Text("(\(Fmt.percent(percent)))").foregroundStyle(.secondary)
             }
         }
-        .font(.callout.monospacedDigit())
+        .font(font.monospacedDigit())
         .foregroundStyle(.primary)
         .help("Изменение показано без оценки: рост или снижение сами по себе не означают улучшения или ухудшения.")
     }

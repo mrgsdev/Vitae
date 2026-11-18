@@ -6,21 +6,26 @@ struct ComparisonView: View {
     @Bindable var navigation: NavigationModel
     @Query(sort: \Examination.date, order: .reverse) private var examinations: [Examination]
 
-    private var state: DynamicsState { navigation.dynamics }
+    private var state: ComparisonState { navigation.comparison }
 
     var body: some View {
-        let examA = examinations.first { $0.id == state.comparisonA }
-        let examB = examinations.first { $0.id == state.comparisonB }
+        let examA = examinations.first { $0.id == state.examinationA }
+        let examB = examinations.first { $0.id == state.examinationB }
         VStack(spacing: 0) {
-            selector
-                .padding(16)
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Выберите два обследования: таблица покажет, как изменился каждый показатель между ними.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                selector
+            }
+            .padding(16)
             Divider()
             if examinations.count < 2 {
                 EmptyStateView(title: "Недостаточно обследований", systemImage: "rectangle.split.2x1",
                                message: "Для сравнения нужно минимум два обследования.")
             } else if let examA, let examB {
                 let rows = ComparisonEngine.compare(examA.sortedResults.map(ResultSnapshot.init), examB.sortedResults.map(ResultSnapshot.init))
-                let filtered = rows.filter { state.comparisonFilter.includes($0) && $0.testName.matchesSearch(state.searchText) }
+                let filtered = rows.filter { state.filter.includes($0) && $0.testName.matchesSearch(state.searchText) }
                 ComparisonSummaryBar(rows: rows)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
@@ -49,20 +54,22 @@ struct ComparisonView: View {
             }
         }
         .onAppear(perform: selectDefaults)
+        .navigationTitle("Сравнение")
+        .searchable(text: $navigation.comparison.searchText, placement: .toolbar, prompt: "Поиск показателя")
     }
 
     private var selector: some View {
         HStack(spacing: 12) {
-            examPicker("Обследование A", selection: $navigation.dynamics.comparisonA)
+            examPicker("Обследование A", selection: $navigation.comparison.examinationA)
             Button {
-                swap(&navigation.dynamics.comparisonA, &navigation.dynamics.comparisonB)
+                swap(&navigation.comparison.examinationA, &navigation.comparison.examinationB)
             } label: {
                 Image(systemName: "arrow.left.arrow.right")
             }
             .help("Поменять местами")
-            examPicker("Обследование B", selection: $navigation.dynamics.comparisonB)
+            examPicker("Обследование B", selection: $navigation.comparison.examinationB)
             Spacer()
-            Picker("Показать", selection: $navigation.dynamics.comparisonFilter) {
+            Picker("Показать", selection: $navigation.comparison.filter) {
                 ForEach(ComparisonFilter.allCases) { Text($0.title).tag($0) }
             }
             .fixedSize()
@@ -80,11 +87,11 @@ struct ComparisonView: View {
     }
 
     private func selectDefaults() {
-        guard state.comparisonA == nil || state.comparisonB == nil else { return }
+        guard state.examinationA == nil || state.examinationB == nil else { return }
         let completed = examinations.filter { $0.status != .draft }
         guard completed.count >= 2 else { return }
-        navigation.dynamics.comparisonB = completed[0].id
-        navigation.dynamics.comparisonA = completed[1].id
+        navigation.comparison.examinationB = completed[0].id
+        navigation.comparison.examinationA = completed[1].id
     }
 
     private func report(rows: [ComparisonRow], a: Examination, b: Examination) -> Data {

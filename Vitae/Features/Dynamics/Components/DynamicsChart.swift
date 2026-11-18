@@ -126,6 +126,67 @@ struct DynamicsChart: View {
     }
 }
 
+/// Мини-график для карточки показателя: линия, точки по статусу и зона референса
+/// последнего измерения. Без осей и интерактивности.
+struct MiniDynamicsChart: View {
+    let series: DynamicsSeries
+
+    private var points: [DynamicsPoint] { series.points.sorted { $0.date < $1.date } }
+
+    private var reference: ReferenceRange? { points.last?.reference }
+
+    private var valueDomain: ClosedRange<Double> {
+        let values = points.map(\.value)
+        guard let dataMin = values.min(), let dataMax = values.max() else { return 0...1 }
+        let dataSpan = max(dataMax - dataMin, abs(dataMax) * 0.25, 0.1)
+        var minValue = dataMin, maxValue = dataMax
+        // Границы референса попадают в масштаб, если они недалеко от значений: так зона видна,
+        // даже когда все значения выше «≤ 3» или ниже «≥ 30».
+        for bound in [reference?.lower, reference?.upper].compactMap({ $0 }) {
+            let near = bound.clamped(to: (dataMin - dataSpan)...(dataMax + dataSpan))
+            minValue = min(minValue, near)
+            maxValue = max(maxValue, near)
+        }
+        let span = max(maxValue - minValue, 0.1)
+        return (minValue - span * 0.15)...(maxValue + span * 0.15)
+    }
+
+    private var dateDomain: ClosedRange<Date> {
+        guard let first = points.first?.date, let last = points.last?.date else { return Date.now...Date.now }
+        let span = max(last.timeIntervalSince(first), 86_400)
+        return first.addingTimeInterval(-span * 0.05)...last.addingTimeInterval(span * 0.05)
+    }
+
+    var body: some View {
+        let domain = valueDomain
+        Chart {
+            if let reference, reference.lower != nil || reference.upper != nil {
+                RectangleMark(xStart: .value("Начало", dateDomain.lowerBound), xEnd: .value("Конец", dateDomain.upperBound),
+                              yStart: .value("Нижняя граница", (reference.lower ?? domain.lowerBound).clamped(to: domain)),
+                              yEnd: .value("Верхняя граница", (reference.upper ?? domain.upperBound).clamped(to: domain)))
+                    .foregroundStyle(Color.green.opacity(0.1))
+            }
+            ForEach(points) { point in
+                LineMark(x: .value("Дата", point.date), y: .value("Значение", point.value))
+                    .foregroundStyle(Color.accentColor.opacity(0.7))
+                    .lineStyle(StrokeStyle(lineWidth: 1.6))
+            }
+            ForEach(points) { point in
+                PointMark(x: .value("Дата", point.date), y: .value("Значение", point.value))
+                    .foregroundStyle(point.status.color)
+                    .symbolSize(point.id == points.last?.id ? 36 : 18)
+            }
+        }
+        .chartXScale(domain: dateDomain)
+        .chartYScale(domain: domain)
+        .chartXAxis(.hidden)
+        .chartYAxis(.hidden)
+        .chartLegend(.hidden)
+        .chartPlotStyle { $0.clipped() }
+        .accessibilityHidden(true)
+    }
+}
+
 private struct ChartTooltip: View {
     let point: DynamicsPoint
     let unit: String

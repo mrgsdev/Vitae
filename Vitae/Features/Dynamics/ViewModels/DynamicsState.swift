@@ -1,12 +1,40 @@
-import Foundation
+import SwiftUI
 
-enum DynamicsMode: String, CaseIterable, Identifiable {
-    case indicator, comparison
+/// Фильтр обзора показателей по статусу последнего значения.
+enum IndicatorFilter: String, CaseIterable, Identifiable {
+    case all, deviations, inRange, below, above, noReference
     var id: String { rawValue }
+
     var title: String {
         switch self {
-        case .indicator: "Показатель"
-        case .comparison: "Сравнение обследований"
+        case .all: "Все"
+        case .deviations: "Вне референса"
+        case .inRange: "В пределах"
+        case .below: "Ниже"
+        case .above: "Выше"
+        case .noReference: "Без референса"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .all: .accentColor
+        case .deviations: .orange
+        case .inRange: ResultStatus.inRange.color
+        case .below: ResultStatus.below.color
+        case .above: ResultStatus.above.color
+        case .noReference: ResultStatus.noReference.color
+        }
+    }
+
+    func includes(_ status: ResultStatus) -> Bool {
+        switch self {
+        case .all: true
+        case .deviations: status.isDeviation
+        case .inRange: status == .inRange
+        case .below: status == .below
+        case .above: status == .above
+        case .noReference: status == .noReference
         }
     }
 }
@@ -34,15 +62,18 @@ enum ComparisonFilter: String, CaseIterable, Identifiable {
 }
 
 struct DynamicsState {
-    var mode: DynamicsMode = .indicator
-    var selectedCode: String?
+    var filter: IndicatorFilter = .all
     var period: DynamicsPeriod = .all
     /// Выбранная единица отображения для каждого показателя.
     var units: [String: String] = [:]
     var searchText = ""
-    var comparisonA: UUID?
-    var comparisonB: UUID?
-    var comparisonFilter: ComparisonFilter = .all
+}
+
+struct ComparisonState {
+    var examinationA: UUID?
+    var examinationB: UUID?
+    var filter: ComparisonFilter = .all
+    var searchText = ""
 }
 
 /// Сводка по показателю для списка в разделе «Динамика».

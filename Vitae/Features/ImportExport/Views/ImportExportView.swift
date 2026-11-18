@@ -141,10 +141,9 @@ struct ImportExportView: View {
                 }
                 GridRow {
                     Text("Сравнение").foregroundStyle(.secondary)
-                    Text("Выберите обследования в разделе «Динамика»").font(.caption).foregroundStyle(.secondary)
+                    Text("Выберите обследования в разделе «Сравнение»").font(.caption).foregroundStyle(.secondary)
                     Button("Открыть…") {
-                        navigation.selection = .dynamics
-                        navigation.dynamics.mode = .comparison
+                        navigation.show(.comparison)
                     }
                 }
             }

@@ -5,7 +5,7 @@ import XCTest
 final class VitaeUITests: XCTestCase {
     private var app: XCUIApplication!
 
-    private let sections = ["Главная", "Обследования", "Динамика", "Расходы", "Справочник анализов",
+    private let sections = ["Главная", "Обследования", "Динамика", "Сравнение", "Расходы", "Справочник анализов",
                             "Импорт и экспорт", "Напоминания", "Настройки"]
 
     override func setUp() {
@@ -151,13 +151,17 @@ final class VitaeUITests: XCTestCase {
         launch(fixture: true)
         app.typeKey("3", modifierFlags: .command)
         XCTAssertTrue(waitForWindowTitle("Динамика"))
+        XCTAssertTrue(app.staticTexts["Все показатели"].waitForExistence(timeout: 5), "Обзор всех показателей")
+        snapshot("40-Динамика-обзор")
         let ferritin = app.descendants(matching: .any)["dynamics.indicator.ferritin"]
-        if ferritin.waitForExistence(timeout: 5) { ferritin.click() }
-        XCTAssertTrue(app.staticTexts["Ферритин"].firstMatch.waitForExistence(timeout: 5))
-        snapshot("40-Динамика-ферритин")
-        app.radioButtons["Сравнение обследований"].click()
+        XCTAssertTrue(ferritin.waitForExistence(timeout: 5))
+        ferritin.click()
+        XCTAssertTrue(waitForWindowTitle("Ферритин"), "Карточка открывает график показателя")
+        snapshot("41-Динамика-ферритин")
+        app.typeKey("4", modifierFlags: .command)
+        XCTAssertTrue(waitForWindowTitle("Сравнение"))
         XCTAssertTrue(app.tables["comparison.table"].waitForExistence(timeout: 5))
-        snapshot("41-Сравнение")
+        snapshot("42-Сравнение")
     }
 
     // MARK: - Меню и горячие клавиши
@@ -167,7 +171,7 @@ final class VitaeUITests: XCTestCase {
         let menuBar = app.menuBars.firstMatch
         for item in ["О программе Vitae", "Новое обследование", "Новое окно", "Импортировать документ…", "Экспорт…",
                      "Сохранить черновик", "Сохранить обследование", "Найти…", "Главная", "Обследования", "Динамика",
-                     "Расходы", "Справка Vitae"] {
+                     "Сравнение", "Расходы", "Справка Vitae"] {
             XCTAssertTrue(menuBar.menuItems[item].exists, "Нет пункта меню «\(item)»")
         }
         XCTAssertFalse(menuBar.menuItems["Сохранить черновик"].isEnabled, "⌘S недоступно вне редактора")
@@ -188,7 +192,7 @@ final class VitaeUITests: XCTestCase {
         let window = app.windows.firstMatch
         let corner = window.coordinate(withNormalizedOffset: CGVector(dx: 0.999, dy: 0.999))
         corner.press(forDuration: 0.2, thenDragTo: window.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.3)))
-        for (index, key) in ["1", "2", "3", "4"].enumerated() {
+        for (index, key) in ["1", "2", "3", "4", "5"].enumerated() {
             app.typeKey(key, modifierFlags: .command)
             XCTAssertTrue(waitForWindowTitle(sections[index]))
             snapshot("60-Мин-\(sections[index])")

@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
-    case dashboard, examinations, dynamics, expenses, catalog, importExport, reminders, settings
+    case dashboard, examinations, dynamics, comparison, expenses, catalog, importExport, reminders, settings
 
     var id: String { rawValue }
 
@@ -10,6 +10,7 @@ enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
         case .dashboard: "Главная"
         case .examinations: "Обследования"
         case .dynamics: "Динамика"
+        case .comparison: "Сравнение"
         case .expenses: "Расходы"
         case .catalog: "Справочник анализов"
         case .importExport: "Импорт и экспорт"
@@ -23,11 +24,27 @@ enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
         case .dashboard: "heart.text.square"
         case .examinations: "list.clipboard"
         case .dynamics: "chart.xyaxis.line"
+        case .comparison: "rectangle.split.2x1"
         case .expenses: "rublesign.circle"
         case .catalog: "books.vertical"
         case .importExport: "arrow.up.arrow.down.square"
         case .reminders: "bell"
         case .settings: "gearshape"
+        }
+    }
+
+    /// Подсказка при наведении на пункт боковой панели: что находится в разделе.
+    var hint: String {
+        switch self {
+        case .dashboard: "Сводка: последнее обследование, отклонения, изменения и расходы"
+        case .examinations: "Все сдачи анализов списком: открыть, изменить, повторить"
+        case .dynamics: "Графики всех показателей: как менялось каждое значение со временем"
+        case .comparison: "Два обследования рядом: что изменилось между ними"
+        case .expenses: "Сколько потрачено на анализы и как менялись цены"
+        case .catalog: "Список анализов, которые можно вносить, и ваши собственные"
+        case .importExport: "Распознать бланк, резервная копия, CSV и PDF-отчёты"
+        case .reminders: "Когда сдать анализы повторно"
+        case .settings: "Профиль, лаборатории, валюты, блокировка"
         }
     }
 
@@ -39,6 +56,7 @@ enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
 
 enum AppRoute: Hashable {
     case examination(UUID)
+    case indicator(String)
     case documentImport(DocumentImportRequest)
 }
 
@@ -60,6 +78,7 @@ final class NavigationModel {
 
     var examinations = ExaminationsListState()
     var dynamics = DynamicsState()
+    var comparison = ComparisonState()
     var expenses = ExpensesState()
     var catalog = CatalogState()
     var importExportAction: ImportExportAction?
@@ -73,22 +92,38 @@ final class NavigationModel {
     }
 
     func openExamination(_ id: UUID) {
-        let section: SidebarItem = selection == .dashboard || selection == .expenses ? selection! : .examinations
-        selection = section
-        paths[section] = [.examination(id)]
+        let current = selection ?? .dashboard
+        switch current {
+        case .dashboard, .expenses:
+            paths[current] = [.examination(id)]
+        case .dynamics, .comparison:
+            // Обследование открывается поверх графика или сравнения, «Назад» возвращает к ним.
+            paths[current, default: []].append(.examination(id))
+        default:
+            selection = .examinations
+            paths[.examinations] = [.examination(id)]
+        }
     }
 
+    /// Открывает подробный график показателя в разделе «Динамика».
     func openDynamics(code: String) {
         selection = .dynamics
-        dynamics.mode = .indicator
-        dynamics.selectedCode = code
+        paths[.dynamics] = [.indicator(code)]
+    }
+
+    /// Открывает обзор всех показателей с фильтром по статусу последнего значения.
+    func openDynamicsOverview(filter: IndicatorFilter = .all) {
+        selection = .dynamics
+        paths[.dynamics] = []
+        dynamics.filter = filter
+        dynamics.searchText = ""
     }
 
     func compare(_ a: UUID, _ b: UUID) {
-        selection = .dynamics
-        dynamics.mode = .comparison
-        dynamics.comparisonA = a
-        dynamics.comparisonB = b
+        selection = .comparison
+        paths[.comparison] = []
+        comparison.examinationA = a
+        comparison.examinationB = b
     }
 
     func importDocument(_ url: URL?, into examinationID: UUID? = nil) {

@@ -24,10 +24,10 @@ enum UITestingHooks {
             navigation.selection = section
         }
         if defaults.string(forKey: "uiTestingDynamicsMode") == "comparison" {
-            navigation.dynamics.mode = .comparison
+            navigation.selection = .comparison
         }
         if let code = defaults.string(forKey: "uiTestingIndicator") {
-            navigation.dynamics.selectedCode = code
+            navigation.paths[.dynamics] = [.indicator(code)]
             navigation.catalog.selection = code
         }
         if let path = defaults.string(forKey: "uiTestingImport") {
@@ -46,6 +46,7 @@ enum UITestingHooks {
             navigation.examinations.showInspector = true
             if let latest { navigation.examinations.selection = [latest.id] }
         }
+        scheduleSnapshot()
         switch defaults.string(forKey: "uiTestingEditor") {
         case "new": openWindow(id: WindowID.editor, value: EditorRequest.new())
         case "repeat": if let latest { openWindow(id: WindowID.editor, value: EditorRequest.repeatFrom(latest.id)) }
@@ -56,11 +57,38 @@ enum UITestingHooks {
         }
     }
 
+    /// `-uiTestingSnapshot /путь.png`: через несколько секунд сохраняет снимок главного окна
+    /// средствами самого приложения (без права на запись экрана) и закрывает приложение.
+    static func scheduleSnapshot() {
+        guard isActive, let path = defaults.string(forKey: "uiTestingSnapshot") else { return }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(defaults.double(forKey: "uiTestingSnapshotDelay").nonZero ?? 3))
+            guard let window = NSApp.windows.first(where: { $0.isVisible && $0.contentView != nil }),
+                  let image = captureOwnWindow(window) else { return }
+            try? NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])?
+                .write(to: URL(fileURLWithPath: path))
+            if !defaults.bool(forKey: "uiTestingSnapshotKeepOpen") { NSApp.terminate(nil) }
+        }
+    }
+
+    /// Снимок собственного окна через CGWindowListCreateImage: для окон своего процесса
+    /// разрешение на запись экрана не нужно. В Swift функция помечена устаревшей, поэтому через dlsym.
+    private static func captureOwnWindow(_ window: NSWindow) -> CGImage? {
+        typealias CreateImage = @convention(c) (CGRect, UInt32, UInt32, UInt32) -> Unmanaged<CGImage>?
+        guard let symbol = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "CGWindowListCreateImage") else { return nil }
+        let create = unsafeBitCast(symbol, to: CreateImage.self)
+        // kCGWindowListOptionIncludingWindow; kCGWindowImageBoundsIgnoreFraming | kCGWindowImageBestResolution.
+        return create(.null, 1 << 3, UInt32(window.windowNumber), 1 | 1 << 3)?.takeRetainedValue()
+    }
+
     static var selectsFirstResult: Bool { isActive && defaults.bool(forKey: "uiTestingSelectResult") }
 
     static var initialDetailTab: ExaminationDetailTab? {
         guard isActive, let value = defaults.string(forKey: "uiTestingTab") else { return nil }
         return ExaminationDetailTab(rawValue: value)
     }
+}
+private extension Double {
+    var nonZero: Double? { self == 0 ? nil : self }
 }
 #endif

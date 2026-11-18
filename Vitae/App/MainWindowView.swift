@@ -89,9 +89,10 @@ struct SidebarView: View {
             Section("Обзор") {
                 row(.dashboard)
             }
-            Section("Данные") {
+            Section("Мои анализы") {
                 row(.examinations, badge: drafts.count)
                 row(.dynamics)
+                row(.comparison)
                 row(.expenses)
             }
             Section("Справочники") {
@@ -111,6 +112,7 @@ struct SidebarView: View {
         Label(item.title, systemImage: item.symbolName)
             .badge(badge)
             .tag(item)
+            .help(item.hint)
             .accessibilityIdentifier("sidebar.\(item.rawValue)")
     }
 }
@@ -123,7 +125,7 @@ struct SectionContainerView: View {
         NavigationStack(path: navigation.path(for: section)) {
             root(for: section)
                 .navigationDestination(for: AppRoute.self) { route in
-                    RouteDestinationView(route: route)
+                    RouteDestinationView(route: route, navigation: navigation)
                 }
         }
         .id(section)
@@ -135,6 +137,7 @@ struct SectionContainerView: View {
         case .dashboard: DashboardView()
         case .examinations: ExaminationsView(navigation: navigation)
         case .dynamics: DynamicsView(navigation: navigation)
+        case .comparison: ComparisonView(navigation: navigation)
         case .expenses: ExpensesView(navigation: navigation)
         case .catalog: LabTestsView(navigation: navigation)
         case .importExport: ImportExportView(navigation: navigation)
@@ -146,11 +149,14 @@ struct SectionContainerView: View {
 
 struct RouteDestinationView: View {
     let route: AppRoute
+    let navigation: NavigationModel
 
     var body: some View {
         switch route {
         case .examination(let id):
             ExaminationDetailContainer(examinationID: id)
+        case .indicator(let code):
+            IndicatorDetailContainer(code: code, navigation: navigation)
         case .documentImport(let request):
             DocumentImportView(request: request)
         }
