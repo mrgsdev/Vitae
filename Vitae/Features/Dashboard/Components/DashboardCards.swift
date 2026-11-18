@@ -43,10 +43,12 @@ struct LastExaminationCard: View {
 
 struct StatusSummaryCard: View {
     let summary: DashboardSummary
+    @Environment(\.navigationModel) private var navigation
 
     var body: some View {
         Card(title: "Актуальные значения", systemImage: "checklist",
-             trailing: Fmt.count(summary.total, one: "показатель", few: "показателя", many: "показателей")) {
+             trailing: Fmt.count(summary.total, one: "показатель", few: "показателя", many: "показателей"),
+             actionTitle: "Все графики", action: { navigation?.openDynamicsOverview() }) {
             Grid(horizontalSpacing: 12, verticalSpacing: 12) {
                 GridRow {
                     tile(.inRange, "В пределах референса")
@@ -61,22 +63,46 @@ struct StatusSummaryCard: View {
                 Text("Качественных результатов, не совпадающих с референсом: \(summary.count(.outsideReference))")
                     .font(.caption).foregroundStyle(.secondary)
             }
-            Text("По последнему значению каждого показателя.")
+            Text("По последнему значению каждого показателя. Нажмите на плитку, чтобы увидеть эти показатели и их графики.")
                 .font(.caption).foregroundStyle(.tertiary)
         }
     }
 
     private func tile(_ status: ResultStatus, _ title: String) -> some View {
-        HStack(alignment: .center, spacing: 10) {
-            Circle().fill(status.color).frame(width: 10, height: 10)
-            VStack(alignment: .leading, spacing: 0) {
-                Text("\(summary.count(status))").font(Theme.bigNumber(24)).monospacedDigit()
-                Text(title).font(.caption).foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 0)
+        StatusTile(status: status, title: title, count: summary.count(status)) {
+            navigation?.openDynamicsOverview(filter: IndicatorFilter.allCases.first { $0 != .all && $0 != .deviations && $0.includes(status) } ?? .all)
         }
-        .padding(10)
-        .background(status.color.opacity(0.07), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+}
+
+private struct StatusTile: View {
+    let status: ResultStatus
+    let title: String
+    let count: Int
+    let action: () -> Void
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(alignment: .center, spacing: 10) {
+                Circle().fill(status.color).frame(width: 10, height: 10)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("\(count)").font(Theme.bigNumber(24)).monospacedDigit()
+                    Text(title).font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(isHovered ? .secondary : .tertiary)
+            }
+            .padding(10)
+            .background(status.color.opacity(isHovered ? 0.14 : 0.07), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .disabled(count == 0)
+        .onHover { isHovered = $0 }
+        .help(count == 0 ? title : "Показать: \(title.lowercased())")
         .accessibilityElement(children: .combine)
     }
 }
@@ -86,7 +112,8 @@ struct RecentChangesCard: View {
     @Environment(\.navigationModel) private var navigation
 
     var body: some View {
-        Card(title: "Последние изменения", systemImage: "arrow.left.arrow.right") {
+        Card(title: "Последние изменения", systemImage: "arrow.left.arrow.right",
+             actionTitle: "Вся динамика", action: { navigation?.openDynamicsOverview() }) {
             if changes.isEmpty {
                 Text("Изменения появятся, когда у показателя будет минимум два измерения в сопоставимых единицах.")
                     .font(.callout).foregroundStyle(.secondary)
@@ -116,6 +143,7 @@ struct RecentChangesCard: View {
             }
             Spacer(minLength: 8)
             ChangeLabel(absolute: change.absoluteChange, percent: change.percentChange)
+            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
         }
         .padding(.vertical, 7)
         .contentShape(Rectangle())
@@ -128,7 +156,9 @@ struct DeviationsCard: View {
 
     var body: some View {
         Card(title: "Вне референса", systemImage: "exclamationmark.circle",
-             trailing: deviations.isEmpty ? nil : "\(deviations.count)") {
+             trailing: deviations.isEmpty ? nil : "\(deviations.count)",
+             actionTitle: deviations.isEmpty ? nil : "Все графики",
+             action: { navigation?.openDynamicsOverview(filter: .deviations) }) {
             if deviations.isEmpty {
                 Label("Последние значения всех показателей в пределах референсов лабораторий или без референса.",
                       systemImage: "checkmark.circle")
@@ -148,6 +178,7 @@ struct DeviationsCard: View {
                                 Spacer()
                                 Text("\(item.displayValue) \(item.unit)").monospacedDigit()
                                 StatusBadge(status: item.status, compact: true)
+                                Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
                             }
                             .padding(.vertical, 7)
                             .contentShape(Rectangle())
