@@ -72,13 +72,13 @@ struct ExaminationsView: View {
             TableColumn("Название", value: \.title) { row in
                 Text(row.title).lineLimit(1)
             }
-            .width(min: 160, ideal: 260)
+            .width(min: 150, ideal: 260)
 
             TableColumn("Лаборатория", value: \.laboratoryName) { row in
                 Text(row.laboratoryName.isEmpty ? "—" : row.laboratoryName)
                     .foregroundStyle(row.laboratoryName.isEmpty ? .secondary : .primary)
             }
-            .width(min: 100, ideal: 160)
+            .width(min: 80, ideal: 160)
 
             TableColumn("Анализов", value: \.resultCount) { row in
                 Text("\(row.resultCount)").monospacedDigit()
@@ -95,12 +95,16 @@ struct ExaminationsView: View {
             TableColumn("Стоимость", value: \.costSortKey) { row in
                 Text(row.costText).monospacedDigit()
             }
-            .width(min: 80, ideal: 110)
+            .width(min: 72, ideal: 110)
 
             TableColumn("Статус", value: \.statusSortKey) { row in
                 ExaminationStatusBadge(status: row.status)
             }
-            .width(min: 120, ideal: 190)
+            // Плашка «Ожидает результатов» шириной около 142 pt. При окне 1320 pt с панелью сведений
+            // все колонки сжаты до минимума, и при минимуме 120 статус обрезался до «Ожидает резул…».
+            // Сумма минимумов не больше прежней (658 против 664), чтобы не появилась прокрутка вбок:
+            // запас для статуса взят у названия, лаборатории и стоимости.
+            .width(min: 152, ideal: 190)
         } rows: {
             if state.groupByYear {
                 ForEach(state.groups(for: rows)) { group in

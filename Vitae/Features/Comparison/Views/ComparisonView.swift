@@ -31,6 +31,12 @@ struct ComparisonView: View {
                     .padding(.vertical, 10)
                 Divider()
                 ComparisonTable(rows: filtered, dateA: examA.date, dateB: examB.date)
+                    .overlay {
+                        if let empty = ComparisonEmptyResult(rows: rows, visible: filtered,
+                                                             filter: state.filter, searchText: state.searchText) {
+                            ComparisonEmptyView(result: empty) { navigation.comparison.filter = .all }
+                        }
+                    }
                     .toolbar {
                         ToolbarItemGroup(placement: .primaryAction) {
                             Button {

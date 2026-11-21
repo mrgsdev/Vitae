@@ -26,6 +26,9 @@ enum UITestingHooks {
         if defaults.string(forKey: "uiTestingDynamicsMode") == "comparison" {
             navigation.selection = .comparison
         }
+        if let value = defaults.string(forKey: "uiTestingComparisonFilter"), let filter = ComparisonFilter(rawValue: value) {
+            navigation.comparison.filter = filter
+        }
         if let code = defaults.string(forKey: "uiTestingIndicator") {
             navigation.paths[.dynamics] = [.indicator(code)]
             navigation.catalog.selection = code
