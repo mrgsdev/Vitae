@@ -30,6 +30,7 @@ struct ExaminationDetailContainer: View {
         } else {
             ContentUnavailableView("Обследование не найдено", systemImage: "questionmark.folder",
                                    description: Text("Возможно, оно было удалено."))
+                .navigationTitle("Обследование не найдено")
         }
     }
 }

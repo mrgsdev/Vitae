@@ -27,6 +27,53 @@ enum SearchFieldFocuser {
     }
 }
 
+/// Сообщает, в каком окне показано представление и когда это окно закрывается.
+struct WindowLifecycleReader: NSViewRepresentable {
+    var onAttach: (NSWindow) -> Void
+    var onClose: () -> Void
+
+    func makeNSView(context: Context) -> ReaderView {
+        let view = ReaderView()
+        view.onAttach = onAttach
+        view.onClose = onClose
+        return view
+    }
+
+    func updateNSView(_ nsView: ReaderView, context: Context) {
+        nsView.onAttach = onAttach
+        nsView.onClose = onClose
+    }
+
+    static func dismantleNSView(_ nsView: ReaderView, coordinator: ()) {
+        nsView.stopObserving()
+    }
+
+    final class ReaderView: NSView {
+        var onAttach: ((NSWindow) -> Void)?
+        var onClose: (() -> Void)?
+        private var closeObserver: NSObjectProtocol?
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            stopObserving()
+            guard let window else { return }
+            onAttach?(window)
+            closeObserver = NotificationCenter.default.addObserver(
+                forName: NSWindow.willCloseNotification, object: window, queue: .main
+            ) { [weak self] _ in
+                MainActor.assumeIsolated { self?.onClose?() }
+            }
+        }
+
+        func stopObserving() {
+            if let closeObserver { NotificationCenter.default.removeObserver(closeObserver) }
+            closeObserver = nil
+        }
+
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+    }
+}
+
 /// Локальный монитор нажатий клавиш, активный только для окна этого представления.
 struct KeyEventMonitor: NSViewRepresentable {
     /// Возвращает true, если событие обработано и не должно идти дальше.

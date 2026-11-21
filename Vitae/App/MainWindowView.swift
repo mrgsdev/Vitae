@@ -42,8 +42,18 @@ struct MainWindowView: View {
             Task { await offerUpdate() }
         }
         .onChange(of: controlActiveState) { _, state in
-            if state == .key { modelContext.undoManager = undoManager }
+            if state == .key {
+                modelContext.undoManager = undoManager
+                environment.mainWindows.didActivate(navigation)
+            }
         }
+        .background {
+            WindowLifecycleReader(
+                onAttach: { environment.mainWindows.register(navigation, window: $0) },
+                onClose: { environment.mainWindows.unregister(navigation) }
+            )
+        }
+        .background { DeletedExaminationRoutesPruner(navigation: navigation) }
         .safeAreaInset(edge: .top, spacing: 0) {
             if let error = environment.startupError {
                 Label(error, systemImage: "exclamationmark.triangle.fill")
@@ -117,11 +127,27 @@ struct SidebarView: View {
     }
 }
 
+/// Убирает из путей разделов окна страницы обследований, которые удалили — откуда угодно:
+/// из списка, из другого окна, «Удалить все данные», восстановлением «заменить».
+/// Отдельное представление, чтобы список обследований не пересчитывал всё главное окно.
+private struct DeletedExaminationRoutesPruner: View {
+    let navigation: NavigationModel
+    @Query private var examinations: [Examination]
+
+    var body: some View {
+        Color.clear
+            .accessibilityHidden(true)
+            .onChange(of: Set(examinations.map(\.id))) { _, existing in
+                navigation.removeRoutes(keepingExaminations: existing)
+            }
+    }
+}
+
 struct SectionContainerView: View {
     @Bindable var navigation: NavigationModel
 
     var body: some View {
-        let section = navigation.selection ?? .dashboard
+        let section = navigation.currentSection
         NavigationStack(path: navigation.path(for: section)) {
             root(for: section)
                 .navigationDestination(for: AppRoute.self) { route in

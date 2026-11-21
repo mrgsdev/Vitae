@@ -156,12 +156,8 @@ struct ExaminationDocumentsTab: View {
     }
 
     private func recognize(_ url: URL) {
-        if let navigation {
-            navigation.importDocument(url, into: examination.id)
-        } else {
-            environment.pendingRoute = .importDocument(DocumentImportRequest(url: url, targetExaminationID: examination.id))
-            openWindow(id: WindowID.main)
-        }
+        environment.showInMainWindow(.importDocument(DocumentImportRequest(url: url, targetExaminationID: examination.id)),
+                                     focused: navigation, openWindow: openWindow)
     }
 
     private func saveCopy(_ attachment: Attachment) async {

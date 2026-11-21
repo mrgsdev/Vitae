@@ -20,6 +20,8 @@ final class AppEnvironment {
     var migrationNotice: String?
     /// Действие, ожидающее открытия главного окна (например, импорт из меню без открытых окон).
     var pendingRoute: PendingRoute?
+    /// Открытые главные окна: команды меню без фокуса на главном окне выполняются в них.
+    let mainWindows = MainWindowRegistry()
 
     var context: ModelContext { container.mainContext }
 

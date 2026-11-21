@@ -104,12 +104,7 @@ struct VitaeCommands: Commands {
     }
 
     private func route(_ route: PendingRoute) {
-        if let navigation {
-            navigation.apply(route)
-        } else {
-            environment.pendingRoute = route
-            openWindow(id: WindowID.main)
-        }
+        environment.showInMainWindow(route, focused: navigation, openWindow: openWindow)
     }
 
     @MainActor

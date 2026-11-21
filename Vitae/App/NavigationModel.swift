@@ -83,8 +83,69 @@ final class NavigationModel {
     var catalog = CatalogState()
     var importExportAction: ImportExportAction?
 
+    /// Раздел, который показывает рабочая область (без выбора — «Главная»).
+    var currentSection: SidebarItem { selection ?? .dashboard }
+
+    /// Путь стека раздела. Запись принимается только от стека выбранного раздела:
+    /// при смене раздела `SectionContainerView` пересоздаёт `NavigationStack`, и уходящий стек
+    /// сбрасывает свой путь в `[]` уже после переключения. Без проверки терялась бы открытая
+    /// страница раздела, а переход из вложенной страницы в другой раздел показывал бы его корень.
     func path(for section: SidebarItem) -> Binding<[AppRoute]> {
-        Binding(get: { self.paths[section] ?? [] }, set: { self.paths[section] = $0 })
+        Binding(
+            get: { self.paths[section] ?? [] },
+            set: { newValue in
+                guard section == self.currentSection else { return }
+                self.paths[section] = newValue
+                self.dropClosedImportSessions()
+            }
+        )
+    }
+
+    // MARK: Устаревшие страницы
+
+    /// Состояние открытых экранов импорта по токену запроса. Экран импорта пересоздаётся при каждом
+    /// возврате в раздел (страница раздела сохраняется), и без этого он заново распознавал бы файл:
+    /// терялись правки проверки, а уже сохранённый документ снова предлагался к сохранению.
+    @ObservationIgnored private var importSessions: [UUID: AnyObject] = [:]
+
+    /// Модель экрана импорта для запроса: та же, пока его страница открыта в разделе, иначе новая.
+    func importSession<Model: AnyObject>(for request: DocumentImportRequest, make: () -> Model) -> (model: Model, isNew: Bool) {
+        dropClosedImportSessions()
+        if let existing = importSessions[request.token] as? Model { return (existing, false) }
+        let model = make()
+        importSessions[request.token] = model
+        return (model, true)
+    }
+
+    private func dropClosedImportSessions() {
+        guard !importSessions.isEmpty else { return }
+        let open = Set(paths.values.joined().compactMap { route -> UUID? in
+            if case .documentImport(let request) = route { return request.token }
+            return nil
+        })
+        importSessions = importSessions.filter { open.contains($0.key) }
+    }
+
+    /// Убирает из путей всех разделов страницы обследований, которых больше нет (удалены из списка,
+    /// из другого окна, «Удалить все данные», восстановление «заменить»), вместе со страницами поверх
+    /// них, а также импорт в такое обследование. Ссылки в сравнении и выделение списка сбрасываются.
+    /// Страницы разделов сохраняются при переключении, и без этого раздел показывал бы
+    /// «Обследование не найдено», пока не нажать «Назад».
+    func removeRoutes(keepingExaminations existing: Set<UUID>) {
+        func isStale(_ route: AppRoute) -> Bool {
+            switch route {
+            case .examination(let id): !existing.contains(id)
+            case .documentImport(let request): request.targetExaminationID.map { !existing.contains($0) } ?? false
+            case .indicator: false
+            }
+        }
+        for (section, path) in paths {
+            if let index = path.firstIndex(where: isStale) { paths[section] = Array(path[..<index]) }
+        }
+        if let id = comparison.examinationA, !existing.contains(id) { comparison.examinationA = nil }
+        if let id = comparison.examinationB, !existing.contains(id) { comparison.examinationB = nil }
+        if !examinations.selection.isSubset(of: existing) { examinations.selection.formIntersection(existing) }
+        dropClosedImportSessions()
     }
 
     func show(_ section: SidebarItem) {
@@ -129,6 +190,7 @@ final class NavigationModel {
     func importDocument(_ url: URL?, into examinationID: UUID? = nil) {
         selection = .importExport
         paths[.importExport] = [.documentImport(DocumentImportRequest(url: url, targetExaminationID: examinationID))]
+        dropClosedImportSessions()
     }
 
     func apply(_ route: PendingRoute) {

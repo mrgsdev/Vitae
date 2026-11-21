@@ -17,9 +17,13 @@ struct DocumentImportView: View {
         }
         .navigationTitle(request.targetExaminationID == nil ? "Импорт документа" : "Распознавание документа")
         .task(id: request.token) {
-            let model = DocumentImportModel(request: request, environment: environment)
-            self.model = model
-            if let url = request.url { await model.load(url) }
+            // Экран пересоздаётся при возврате в раздел: модель берётся из навигации окна, чтобы не
+            // распознавать файл заново — иначе пропали бы правки проверки, а сохранённый документ
+            // снова предлагался бы к сохранению.
+            let make = { DocumentImportModel(request: request, environment: environment) }
+            let session = navigation?.importSession(for: request, make: make) ?? (model: make(), isNew: true)
+            self.model = session.model
+            if session.isNew, let url = request.url { await session.model.load(url) }
         }
     }
 }
