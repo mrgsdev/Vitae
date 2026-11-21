@@ -114,17 +114,65 @@ enum ReminderRepeat: String, Codable, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// Следующая дата, строго позже `now`, начиная от `date`.
-    func nextDate(after date: Date, now: Date = .now, calendar: Calendar = AppLocale.calendar) -> Date? {
+    /// Следующая дата, строго позже `now`, начиная от `date`. С `anchorDay` каждая дата ставится
+    /// на исходный день месяца или на последний день короткого месяца: 31.01 → 28.02 → 31.03.
+    func nextDate(after date: Date, anchorDay: Int? = nil, now: Date = .now, calendar: Calendar = AppLocale.calendar) -> Date? {
         guard months > 0 else { return nil }
         var next = date
         var guardCounter = 0
         repeat {
             guard let candidate = calendar.date(byAdding: .month, value: months, to: next) else { return nil }
-            next = candidate
+            next = Self.align(candidate, toDay: anchorDay, calendar: calendar)
             guardCounter += 1
         } while next <= now && guardCounter < 1000
         return next
+    }
+
+    private static func align(_ date: Date, toDay day: Int?, calendar: Calendar) -> Date {
+        guard let day, let days = calendar.range(of: .day, in: .month, for: date) else { return date }
+        var components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
+        components.day = min(day, days.count)
+        return calendar.date(from: components) ?? date
+    }
+}
+
+/// Правило повтора напоминания вместе с исходным днём месяца. День хранится только для 29–31:
+/// такие даты короткий месяц обрезает (31.01 → 28.02), и без исходного дня следующий повтор
+/// навсегда остался бы на 28-м. Хранится в той же строке, что и правило («monthly:31»), чтобы не
+/// менять схему базы; прежние версии Vitae прочтут такую строку как «без повтора».
+struct ReminderSchedule: Equatable, Sendable {
+    var rule: ReminderRepeat
+    var anchorDay: Int?
+
+    init(rule: ReminderRepeat, anchorDay: Int? = nil) {
+        self.rule = rule
+        self.anchorDay = rule == .none ? nil : anchorDay.flatMap { (29...31).contains($0) ? $0 : nil }
+    }
+
+    /// Правило для напоминания на `date`: исходным становится день этой даты.
+    init(rule: ReminderRepeat, anchoredTo date: Date, calendar: Calendar = AppLocale.calendar) {
+        self.init(rule: rule, anchorDay: calendar.component(.day, from: date))
+    }
+
+    init(raw: String) {
+        let parts = raw.split(separator: ":", maxSplits: 1).map(String.init)
+        self.init(rule: ReminderRepeat(rawValue: parts.first ?? "") ?? .none, anchorDay: parts.count > 1 ? Int(parts[1]) : nil)
+    }
+
+    var raw: String { anchorDay.map { "\(rule.rawValue):\($0)" } ?? rule.rawValue }
+
+    func nextDate(after date: Date, now: Date = .now, calendar: Calendar = AppLocale.calendar) -> Date? {
+        rule.nextDate(after: date, anchorDay: anchorDay, now: now, calendar: calendar)
+    }
+
+    /// Правило после редактирования напоминания. Если дата не менялась, исходный день сохраняется:
+    /// иначе переименование напоминания, перенесённого на 28.02, потеряло бы день 31.
+    static func edited(_ existing: ReminderSchedule?, oldDueDate: Date?, rule: ReminderRepeat, dueDate: Date,
+                       calendar: Calendar = AppLocale.calendar) -> ReminderSchedule {
+        if let existing, let oldDueDate, oldDueDate == dueDate, existing.anchorDay != nil {
+            return ReminderSchedule(rule: rule, anchorDay: existing.anchorDay)
+        }
+        return ReminderSchedule(rule: rule, anchoredTo: dueDate, calendar: calendar)
     }
 }
 

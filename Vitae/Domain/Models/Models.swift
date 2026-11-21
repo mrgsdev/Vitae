@@ -312,7 +312,7 @@ final class Reminder {
         self.title = title
         self.notes = notes
         self.dueDate = dueDate
-        self.repeatRaw = repeatRule.rawValue
+        self.repeatRaw = ReminderSchedule(rule: repeatRule, anchoredTo: dueDate).raw
         self.isCompleted = isCompleted
         self.completedAt = completedAt
         self.testCodes = testCodes
@@ -320,8 +320,11 @@ final class Reminder {
         self.createdAt = createdAt
     }
 
-    var repeatRule: ReminderRepeat {
-        get { ReminderRepeat(rawValue: repeatRaw) ?? .none }
-        set { repeatRaw = newValue.rawValue }
+    /// Правило повтора с исходным днём месяца (см. `ReminderSchedule`).
+    var schedule: ReminderSchedule {
+        get { ReminderSchedule(raw: repeatRaw) }
+        set { repeatRaw = newValue.raw }
     }
+
+    var repeatRule: ReminderRepeat { schedule.rule }
 }

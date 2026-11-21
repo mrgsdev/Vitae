@@ -483,9 +483,13 @@ struct BackupService {
 
         let existingReminders = Set(try context.fetch(FetchDescriptor<Reminder>()).map(\.id))
         for r in payload.reminders where !existingReminders.contains(r.id) {
-            context.insert(Reminder(id: r.id, title: r.title, notes: r.notes, dueDate: r.dueDate,
-                                    repeatRule: ReminderRepeat(rawValue: r.repeatRule) ?? .none, isCompleted: r.isCompleted,
-                                    completedAt: r.completedAt, testCodes: r.testCodes, notificationsEnabled: r.notificationsEnabled))
+            // Строка правила может содержать исходный день («monthly:31») — переносится как есть.
+            let schedule = ReminderSchedule(raw: r.repeatRule)
+            let reminder = Reminder(id: r.id, title: r.title, notes: r.notes, dueDate: r.dueDate,
+                                    repeatRule: schedule.rule, isCompleted: r.isCompleted,
+                                    completedAt: r.completedAt, testCodes: r.testCodes, notificationsEnabled: r.notificationsEnabled)
+            if schedule.anchorDay != nil { reminder.schedule = schedule }
+            context.insert(reminder)
             report.addedReminders += 1
         }
 

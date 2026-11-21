@@ -121,7 +121,7 @@ struct RemindersView: View {
         if reminder.isCompleted {
             reminder.isCompleted = false
             reminder.completedAt = nil
-        } else if let next = reminder.repeatRule.nextDate(after: reminder.dueDate) {
+        } else if let next = reminder.schedule.nextDate(after: reminder.dueDate) {
             reminder.dueDate = next
         } else {
             reminder.isCompleted = true
@@ -226,9 +226,10 @@ struct ReminderEditorSheet: View {
     private func save() {
         let target = reminder ?? Reminder(title: title, dueDate: dueDate)
         if reminder == nil { context.insert(target) }
+        let schedule = ReminderSchedule.edited(reminder?.schedule, oldDueDate: reminder?.dueDate, rule: repeatRule, dueDate: dueDate)
         target.title = title.trimmed
         target.dueDate = dueDate
-        target.repeatRule = repeatRule
+        target.schedule = schedule
         target.notes = notes
         target.notificationsEnabled = notificationsEnabled
         target.testCodes = Array(testCodes).sorted()
