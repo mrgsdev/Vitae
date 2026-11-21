@@ -210,8 +210,8 @@ final class AppLockManager {
 
 @MainActor
 enum AutoBackupService {
-    static func backupFiles() -> [URL] {
-        let urls = (try? FileManager.default.contentsOfDirectory(at: AppDirectories.backups, includingPropertiesForKeys: [.creationDateKey])) ?? []
+    static func backupFiles(in directory: URL = AppDirectories.backups) -> [URL] {
+        let urls = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: [.creationDateKey])) ?? []
         return urls.filter { $0.pathExtension == "json" }.sorted { $0.lastPathComponent > $1.lastPathComponent }
     }
 
@@ -246,8 +246,9 @@ enum AutoBackupService {
         }
     }
 
-    static func prune(keep: Int) {
-        for url in backupFiles().dropFirst(max(keep, 1)) {
+    /// Страховочные копии (`createSafetyBackup`) не считаются и не удаляются — у них своя ротация.
+    static func prune(keep: Int, in directory: URL = AppDirectories.backups) {
+        for url in backupFiles(in: directory).filter({ !isSafetyCopy($0) }).dropFirst(max(keep, 1)) {
             try? FileManager.default.removeItem(at: url)
         }
     }

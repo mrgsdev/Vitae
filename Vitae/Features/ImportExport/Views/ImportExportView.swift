@@ -223,19 +223,21 @@ struct ImportExportView: View {
 
     private func performRestore(_ restore: PendingRestore, mode: RestoreMode) {
         do {
-            if mode == .replace {
-                // Страховочная копия текущих данных перед заменой.
-                _ = try? AutoBackupService.createBackup(context: environment.context, fileStorage: environment.fileStorage)
-            }
-            let report = try BackupService(context: environment.context, fileStorage: environment.fileStorage).restore(restore.envelope, mode: mode)
+            let outcome = try BackupRestorer(context: environment.context, fileStorage: environment.fileStorage)
+                .restore(restore.envelope, mode: mode)
+            let report = outcome.report
             var text = "Добавлено обследований: \(report.addedExaminations), результатов: \(report.addedResults), расходов: \(report.addedExpenses), документов: \(report.addedAttachments)."
             if report.skippedExaminations > 0 { text += " Пропущено уже существующих обследований: \(report.skippedExaminations)." }
             if report.missingAttachmentFiles > 0 { text += " Документов без содержимого в копии: \(report.missingAttachmentFiles)." }
+            if let safety = outcome.safetyBackup {
+                text += " Прежние данные сохранены в копии «\(safety.deletingPathExtension().lastPathComponent)»."
+            }
             message = ("Восстановление завершено", text)
-            refreshBackups()
         } catch {
             message = ("Не удалось восстановить", error.localizedDescription)
         }
+        // И после ошибки: страховочная копия могла записаться до сбоя самого восстановления.
+        refreshBackups()
     }
 
     private func chooseCSVFile() async {
