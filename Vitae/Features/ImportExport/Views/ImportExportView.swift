@@ -8,6 +8,7 @@ struct ImportExportView: View {
 
     @Query(sort: \Examination.date, order: .reverse) private var examinations: [Examination]
     @Query private var results: [TestResult]
+    @Query private var tests: [LabTest]
 
     @State private var includeAttachments = true
     @State private var pendingRestore: PendingRestore?
@@ -105,8 +106,12 @@ struct ImportExportView: View {
         }
     }
 
+    /// Показатели для «Истории показателя» — с теми же названиями, что и в «Динамике».
+    private var indicators: [IndicatorSummary] {
+        IndicatorSummary.build(from: results.map(ResultSnapshot.init), catalog: CatalogIndex(tests: tests))
+    }
+
     private var reportsCard: some View {
-        let indicators = IndicatorSummary.build(from: results.map(ResultSnapshot.init))
         let years = Array(Set(examinations.map { $0.date.year() })).sorted(by: >)
         return Card(title: "Отчёты PDF", systemImage: "doc.richtext") {
             Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 10) {
@@ -272,9 +277,8 @@ struct ImportExportView: View {
     }
 
     private func exportHistoryReport() async {
-        guard let code = reportTestCode else { return }
+        guard let code = reportTestCode, let name = indicators.first(where: { $0.code == code })?.name else { return }
         let history = results.map(ResultSnapshot.init).filter { $0.testCode == code && $0.isAnalyzable }
-        guard let name = history.first?.testName else { return }
         let series = DynamicsCalculator.series(from: history)
         let renderer = ImageRenderer(content: DynamicsChart(series: series, interactive: false)
             .frame(width: 900, height: 340).padding(10).background(Color.white).environment(\.colorScheme, .light))

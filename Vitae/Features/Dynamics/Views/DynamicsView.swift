@@ -6,10 +6,11 @@ import SwiftUI
 struct DynamicsView: View {
     @Bindable var navigation: NavigationModel
     @Query private var results: [TestResult]
+    @Query private var tests: [LabTest]
 
     var body: some View {
         let snapshots = results.map(ResultSnapshot.init).filter(\.isAnalyzable)
-        let indicators = IndicatorSummary.build(from: snapshots)
+        let indicators = IndicatorSummary.build(from: snapshots, catalog: CatalogIndex(tests: tests))
         Group {
             if indicators.isEmpty {
                 EmptyStateView(title: "Нет данных для динамики", systemImage: "chart.xyaxis.line",
@@ -33,7 +34,7 @@ private struct DynamicsOverview: View {
     @Binding var state: DynamicsState
 
     var body: some View {
-        let found = indicators.filter { $0.name.matchesSearch(state.searchText) }
+        let found = indicators.filter { $0.matches(state.searchText) }
         let visible = found.filter { state.filter.includes($0.latest.status) }
         let grouped = Dictionary(grouping: visible, by: \.category)
         ScrollView {
@@ -203,10 +204,11 @@ struct IndicatorDetailContainer: View {
     let code: String
     @Bindable var navigation: NavigationModel
     @Query private var results: [TestResult]
+    @Query private var tests: [LabTest]
 
     var body: some View {
         let history = results.map(ResultSnapshot.init).filter { $0.testCode == code && $0.isAnalyzable }
-        if let summary = IndicatorSummary.build(from: history).first {
+        if let summary = IndicatorSummary.build(from: history, catalog: CatalogIndex(tests: tests)).first {
             IndicatorDetailView(summary: summary, history: history, state: $navigation.dynamics)
                 .navigationTitle(summary.name)
         } else {

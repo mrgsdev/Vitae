@@ -87,16 +87,30 @@ struct ComparisonState {
 struct IndicatorSummary: Identifiable, Hashable {
     var id: String { code }
     let code: String
+    /// Название из справочника: результаты хранят названия из бланков, и у одного показателя
+    /// они разные («Холестерин ЛПВП» и «Холестерин-ЛПВП»). Карточка объединяет все измерения,
+    /// поэтому её заголовок не должен меняться после импорта бланка другой лаборатории.
+    /// Название последнего бланка — только если показателя уже нет в справочнике.
     let name: String
     let category: TestCategory
     let latest: ResultSnapshot
     let count: Int
+    /// Все названия показателя для поиска: справочник (название, краткое, синонимы) и бланки.
+    let searchNames: [String]
 
-    static func build(from results: [ResultSnapshot]) -> [IndicatorSummary] {
+    static func build(from results: [ResultSnapshot], catalog: CatalogIndex) -> [IndicatorSummary] {
         Dictionary(grouping: results.filter(\.isAnalyzable), by: \.testCode).compactMap { code, items in
             guard let latest = items.max(by: { ($0.date, $0.sortIndex) < ($1.date, $1.sortIndex) }) else { return nil }
-            return IndicatorSummary(code: code, name: latest.testName, category: latest.category, latest: latest, count: items.count)
+            let entry = catalog.entry(code)
+            let catalogNames = entry.map { [$0.name, $0.shortName] + $0.aliases } ?? []
+            let names = (catalogNames + items.map(\.testName)).filter { !$0.isEmpty }.uniqued(by: \.searchNormalized)
+            return IndicatorSummary(code: code, name: entry?.name ?? latest.testName, category: latest.category,
+                                    latest: latest, count: items.count, searchNames: names)
         }
         .sorted { ($0.category.sortIndex, $0.name) < ($1.category.sortIndex, $1.name) }
+    }
+
+    func matches(_ query: String) -> Bool {
+        query.searchNormalized.isEmpty || searchNames.contains { $0.matchesSearch(query) }
     }
 }
