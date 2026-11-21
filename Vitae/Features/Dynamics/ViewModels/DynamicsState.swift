@@ -74,6 +74,13 @@ struct ComparisonState {
     var examinationB: UUID?
     var filter: ComparisonFilter = .all
     var searchText = ""
+
+    /// Меняет обследования местами одним изменением состояния. Вызов `swap(&state.a, &state.b)`
+    /// на свойстве @Observable-модели — два одновременных доступа к нему, и Swift аварийно
+    /// завершает приложение («Simultaneous accesses … requires exclusive access»).
+    mutating func swapExaminations() {
+        (examinationA, examinationB) = (examinationB, examinationA)
+    }
 }
 
 /// Сводка по показателю для списка в разделе «Динамика».

@@ -62,11 +62,12 @@ struct ComparisonView: View {
         HStack(spacing: 12) {
             examPicker("Обследование A", selection: $navigation.comparison.examinationA)
             Button {
-                swap(&navigation.comparison.examinationA, &navigation.comparison.examinationB)
+                navigation.comparison.swapExaminations()
             } label: {
-                Image(systemName: "arrow.left.arrow.right")
+                Label("Поменять местами", systemImage: "arrow.left.arrow.right")
+                    .labelStyle(.iconOnly)
             }
-            .help("Поменять местами")
+            .help("Поменять обследования A и B местами")
             examPicker("Обследование B", selection: $navigation.comparison.examinationB)
             Spacer()
             Picker("Показать", selection: $navigation.comparison.filter) {

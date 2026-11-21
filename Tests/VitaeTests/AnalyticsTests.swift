@@ -192,3 +192,21 @@ struct ExpenseTests {
         #expect(converted == Decimal(string: "6694.99"))
     }
 }
+
+@MainActor
+@Suite("Сравнение: выбор обследований")
+struct ComparisonStateTests {
+    /// Кнопка «Поменять местами» меняет выбор в модели навигации без двойного доступа к свойству.
+    @Test func swapExaminationsInNavigationModel() {
+        let navigation = NavigationModel()
+        let a = UUID(), b = UUID()
+        navigation.compare(a, b)
+        navigation.comparison.swapExaminations()
+        #expect(navigation.comparison.examinationA == b)
+        #expect(navigation.comparison.examinationB == a)
+        navigation.comparison.examinationB = nil
+        navigation.comparison.swapExaminations()
+        #expect(navigation.comparison.examinationA == nil)
+        #expect(navigation.comparison.examinationB == b)
+    }
+}
