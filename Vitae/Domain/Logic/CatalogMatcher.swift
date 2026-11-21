@@ -21,7 +21,7 @@ struct CatalogMatcher: Sendable {
         self.catalog = catalog
         var list: [Alias] = []
         for entry in catalog.entries where !entry.isPanel {
-            let names = Set(([entry.name, entry.shortName] + entry.aliases).map(\.searchNormalized))
+            let names = Set(([entry.name, entry.shortName] + entry.aliases).map { Self.matchKey($0) })
             for name in names where name.count >= 2 {
                 list.append(Alias(text: name, code: entry.code))
             }
@@ -30,9 +30,26 @@ struct CatalogMatcher: Sendable {
     }
 
     static func normalize(_ text: String) -> String {
-        text.searchNormalized
-            .trimmingCharacters(in: CharacterSet(charactersIn: " .,:;*-–—•·"))
+        matchKey(text.searchNormalized.trimmingCharacters(in: CharacterSet(charactersIn: " .,:;*-–—•·")))
     }
+
+    /// Ключ для сравнения названий: дефис равен пробелу, а кириллические буквы, похожие
+    /// на латинские, приравнены к ним. Так «Холестерин-ЛПВП» находит «холестерин лпвп»,
+    /// а «Витамин 25(ОН) D» с русскими «О» и «Н» — синоним с латинским «25(OH)».
+    static func matchKey(_ text: String) -> String {
+        searchCharacters(text.searchNormalized).searchNormalized
+    }
+
+    /// Замена символов для сравнения без изменения длины строки: позиции совпадения
+    /// остаются верными для исходной строки.
+    static func searchCharacters(_ text: String) -> String {
+        String(text.map { lookalikes[$0] ?? $0 })
+    }
+
+    private static let lookalikes: [Character: Character] = [
+        "-": " ", "‐": " ", "а": "a", "в": "b", "е": "e", "к": "k", "м": "m", "н": "h",
+        "о": "o", "р": "p", "с": "c", "т": "t", "у": "y", "х": "x"
+    ]
 
     /// Точное совпадение названия с названием, кратким названием или синонимом.
     func exactMatch(_ name: String) -> CatalogEntry? {
@@ -49,7 +66,7 @@ struct CatalogMatcher: Sendable {
 
     /// Самый длинный синоним, встречающийся в строке целым словом.
     func find(inNormalized line: String) -> Match? {
-        let chars = Array(line)
+        let chars = Array(Self.searchCharacters(line))
         for alias in aliases {
             let target = Array(alias.text)
             guard target.count <= chars.count else { continue }

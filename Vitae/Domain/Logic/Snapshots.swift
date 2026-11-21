@@ -21,6 +21,8 @@ struct ResultSnapshot: Identifiable, Hashable, Sendable {
     let reference: ReferenceRange
     let isQualitative: Bool
     let status: ResultStatus
+    /// Комментарий лаборатории к результату.
+    var note: String = ""
 
     init(id: UUID = UUID(), examinationID: UUID? = nil, examinationTitle: String = "", examinationStatus: ExaminationStatus = .completed,
          date: Date, laboratoryName: String? = nil, testCode: String, testName: String, category: TestCategory = .other,
@@ -66,7 +68,18 @@ struct ResultSnapshot: Identifiable, Hashable, Sendable {
         reference = result.reference
         isQualitative = result.isQualitative
         status = ReferenceEvaluator.status(for: value, reference: reference)
+        note = result.note
     }
+
+    /// Подпись статуса словами лаборатории из комментария («Недостаточность»), если она есть
+    /// и не противоречит статусу по референсу.
+    var statusLabel: String? { LabCommentInterpreter.label(for: value, comment: note, status: status) }
+
+    /// Зона комментария, в которую попало значение, если она не противоречит статусу.
+    var commentZone: LabCommentInterpreter.Zone? { LabCommentInterpreter.zone(for: value, in: note, status: status) }
+
+    /// Подпись статуса для таблиц и отчётов: слова лаборатории или краткий статус.
+    var statusShortTitle: String { statusLabel ?? status.shortTitle }
 
     /// Результат пригоден для аналитики: обследование не черновик и значение внесено.
     var isAnalyzable: Bool { examinationStatus != .draft && !value.isEmpty }

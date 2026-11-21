@@ -12,7 +12,7 @@ struct ResultEntryGrid: View {
 
     static let checkboxWidth: CGFloat = 28
     static let nameMinWidth: CGFloat = 190
-    static let statusWidth: CGFloat = 128
+    static let statusWidth: CGFloat = 176
     static let deleteWidth: CGFloat = 28
     static let widths: [EntryColumn: CGFloat] = [.value: 92, .unit: 86, .lower: 74, .upper: 74, .reference: 149, .price: 100]
 
@@ -254,7 +254,7 @@ struct EntryGridRow: View {
         HStack(spacing: 0) {
             Group {
                 if let status = row.status {
-                    StatusBadge(status: status, compact: true)
+                    StatusBadge(status: status, compact: true, comment: row.note, value: row.parsedValue)
                 } else {
                     Text(row.kind == .panel ? "стоимость комплекса" : "услуга")
                         .font(.caption).foregroundStyle(.tertiary)

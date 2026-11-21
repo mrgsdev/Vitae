@@ -241,7 +241,7 @@ struct LabTestInspector: View {
                         HStack {
                             Text("\(latest.displayValue) \(latest.unit)").font(.title3).monospacedDigit()
                             Spacer()
-                            StatusBadge(status: latest.status, compact: true)
+                            StatusBadge(snapshot: latest, compact: true)
                         }
                         Text(Fmt.date(latest.date)).font(.caption).foregroundStyle(.secondary)
                         Button("Открыть динамику") { navigation?.openDynamics(code: code) }

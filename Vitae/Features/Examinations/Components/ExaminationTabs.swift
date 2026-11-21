@@ -59,8 +59,8 @@ struct ExaminationResultsTab: View {
                     .width(min: 60, ideal: 80)
                 TableColumn("Референс") { row in Text(row.reference.displayText).monospacedDigit() }
                     .width(min: 80, ideal: 110)
-                TableColumn("Статус") { row in StatusBadge(status: row.status, compact: true) }
-                    .width(min: 100, ideal: 130)
+                TableColumn("Статус") { row in StatusBadge(snapshot: row, compact: true) }
+                    .width(min: 100, ideal: 170)
                 TableColumn("Предыдущее") { row in
                     if let previous = index.previous(before: row), let current = row.value.numeric, row.value.isExactNumber {
                         HStack(spacing: 6) {
@@ -102,9 +102,18 @@ struct ResultInspector: View {
                         Text(snapshot.displayValue).font(Theme.bigNumber(36)).monospacedDigit()
                         Text(result.unit).font(.title3).foregroundStyle(.secondary)
                     }
-                    StatusBadge(status: snapshot.status)
+                    StatusBadge(snapshot: snapshot)
                     ReferenceRangeBar(value: snapshot.value.numeric, reference: snapshot.reference)
                     InfoRow(title: "Референс лаборатории", value: snapshot.reference.displayText)
+                    if !snapshot.note.isEmpty {
+                        if let zone = snapshot.commentZone {
+                            InfoRow(title: "Зона по комментарию", value: zone.text)
+                        }
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Комментарий лаборатории").font(.callout).foregroundStyle(.secondary)
+                            Text(snapshot.note).font(.callout).textSelection(.enabled)
+                        }
+                    }
 
                     if let details = tests.first(where: { $0.code == result.testCode })?.details, !details.isEmpty {
                         Divider()
@@ -160,7 +169,7 @@ struct ExaminationDynamicsTab: View {
                                 HStack {
                                     Text(item.testName).font(.headline).lineLimit(1)
                                     Spacer()
-                                    StatusBadge(status: item.status, compact: true)
+                                    StatusBadge(snapshot: item, compact: true)
                                 }
                                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                                     Text(item.displayValue).font(Theme.bigNumber(24)).monospacedDigit()

@@ -202,6 +202,9 @@ private struct ChartTooltip: View {
                 if !point.reference.isEmpty {
                     Text("реф. \(point.reference.displayText)").font(.caption2)
                 }
+                if let label = point.source.statusLabel {
+                    Text(label).font(.caption2.weight(.semibold))
+                }
             }
         }
         .foregroundStyle(.white)

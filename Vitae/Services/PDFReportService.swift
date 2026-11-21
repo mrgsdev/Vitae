@@ -34,8 +34,17 @@ enum PDFReportService {
 
         pdf.heading("Результаты")
         let sorted = results.sorted { $0.sortIndex < $1.sortIndex }
-        let rows = sorted.map { r in
-            [r.panelName.map { "\($0): \(r.testName)" } ?? r.testName, r.displayValue, r.unit, r.reference.displayText, r.status.shortTitle]
+        // Комментарий лаборатории не помещается в колонку: у названия ставится номер сноски,
+        // а сам текст идёт под таблицей.
+        var footnotes: [String] = []
+        let rows = sorted.map { r -> [String] in
+            var name = r.panelName.map { "\($0): \(r.testName)" } ?? r.testName
+            if let note = r.note.trimmed.nilIfEmpty {
+                let marker = footnoteMarker(footnotes.count + 1)
+                footnotes.append("\(marker) \(name): \(note)")
+                name += marker
+            }
+            return [name, r.displayValue, r.unit, r.reference.displayText, r.statusShortTitle]
         }
         let highlights = Set(sorted.enumerated().filter { $0.element.status.isDeviation }.map(\.offset))
         pdf.table(columns: [
@@ -45,6 +54,10 @@ enum PDFReportService {
             .init(title: "Референс", width: 0.17),
             .init(title: "Статус", width: 0.18)
         ], rows: rows, highlights: highlights)
+        if !footnotes.isEmpty {
+            pdf.paragraph("Комментарии лаборатории", size: 9, color: .darkGray)
+            for footnote in footnotes { pdf.paragraph(footnote, size: 9) }
+        }
 
         if !expenses.isEmpty {
             pdf.heading("Расходы")
@@ -62,6 +75,12 @@ enum PDFReportService {
         pdf.spacer()
         pdf.paragraph(disclaimer, size: 8, color: .gray)
         return pdf.finish()
+    }
+
+    /// Номер сноски надстрочными цифрами: 1 → «¹», 12 → «¹²».
+    private static func footnoteMarker(_ number: Int) -> String {
+        let digits: [Character] = ["⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹"]
+        return String(String(number).compactMap { $0.wholeNumberValue.map { digits[$0] } })
     }
 
     // MARK: Сравнение
@@ -129,7 +148,7 @@ enum PDFReportService {
             .init(title: "Лаборатория", width: 0.3)
         ], rows: points.map {
             [Fmt.shortDate($0.date), ($0.isApproximate ? $0.source.displayValue : Fmt.number($0.value)) + ($0.wasConverted ? "*" : ""),
-             $0.reference.displayText, $0.status.shortTitle, $0.source.laboratoryName ?? ""]
+             $0.reference.displayText, $0.source.statusShortTitle, $0.source.laboratoryName ?? ""]
         }, highlights: Set(points.enumerated().filter { $0.element.status.isDeviation }.map(\.offset)))
         if points.contains(where: \.wasConverted) {
             pdf.paragraph("* значение пересчитано из другой единицы измерения.", size: 8, color: .gray)

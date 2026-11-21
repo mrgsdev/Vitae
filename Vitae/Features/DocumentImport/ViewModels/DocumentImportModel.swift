@@ -78,7 +78,7 @@ final class DocumentImportModel {
                             category: entry?.category ?? .other, isQualitative: item.isQualitative,
                             value: item.rawValue, unit: item.unit,
                             lower: Fmt.optionalNumber(item.reference.lower), upper: Fmt.optionalNumber(item.reference.upper),
-                            referenceText: item.reference.text ?? "")
+                            referenceText: item.reference.text ?? "", note: item.comment)
         }
         self.draft = draft
     }

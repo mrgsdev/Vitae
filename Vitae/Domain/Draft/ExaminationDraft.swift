@@ -28,6 +28,8 @@ struct EntryRow: Identifiable, Equatable, Sendable {
     var lower: String = ""
     var upper: String = ""
     var referenceText: String = ""
+    /// Комментарий лаборатории к результату (например, рекомендации вместо референса).
+    var note: String = ""
     var price: String = ""
     /// Подсказка в поле стоимости (прошлая цена). Не сохраняется как расход.
     var pricePlaceholder: String = ""

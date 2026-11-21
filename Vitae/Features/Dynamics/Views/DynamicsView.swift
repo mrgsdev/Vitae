@@ -157,7 +157,7 @@ private struct IndicatorCard: View {
                 Text(summary.latest.displayValue).font(Theme.bigNumber(24)).monospacedDigit().lineLimit(1)
                 Text(summary.latest.unit).font(.callout).foregroundStyle(.secondary).lineLimit(1)
                 Spacer(minLength: 4)
-                StatusBadge(status: summary.latest.status, compact: true)
+                StatusBadge(snapshot: summary.latest, compact: true)
             }
             Group {
                 if series.points.count >= 2 {
@@ -310,7 +310,7 @@ struct IndicatorDetailView: View {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(summary.latest.displayValue).font(Theme.bigNumber(44)).monospacedDigit()
                 Text(summary.latest.unit).font(.title2).foregroundStyle(.secondary)
-                StatusBadge(status: summary.latest.status)
+                StatusBadge(snapshot: summary.latest)
                     .padding(.leading, 6)
             }
             Text([Fmt.date(summary.latest.date), summary.latest.laboratoryName, summary.latest.reference.isEmpty ? nil : "референс \(summary.latest.reference.displayText)"]
@@ -377,7 +377,7 @@ struct IndicatorDetailView: View {
                             }
                         }
                         Text(item.reference.displayText).monospacedDigit().foregroundStyle(.secondary)
-                        StatusBadge(status: item.status, compact: true)
+                        StatusBadge(snapshot: item, compact: true)
                         Text(item.laboratoryName ?? "—").lineLimit(1).foregroundStyle(.secondary)
                         Button(item.examinationTitle.isEmpty ? "Открыть" : item.examinationTitle) {
                             if let id = item.examinationID { navigation?.openExamination(id) }

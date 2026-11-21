@@ -158,13 +158,13 @@ struct ComparisonTable: View {
             TableColumn("Изменение") { row in changeCell(row) }
                 .width(min: 150, ideal: 200)
             TableColumn("Статус A") { row in
-                if let a = row.a { StatusBadge(status: a.status, compact: true) } else { Text("—").foregroundStyle(.tertiary) }
+                if let a = row.a { StatusBadge(snapshot: a, compact: true) } else { Text("—").foregroundStyle(.tertiary) }
             }
-            .width(min: 100, ideal: 120)
+            .width(min: 100, ideal: 160)
             TableColumn("Статус B") { row in
-                if let b = row.b { StatusBadge(status: b.status, compact: true) } else { Text("—").foregroundStyle(.tertiary) }
+                if let b = row.b { StatusBadge(snapshot: b, compact: true) } else { Text("—").foregroundStyle(.tertiary) }
             }
-            .width(min: 100, ideal: 120)
+            .width(min: 100, ideal: 160)
         }
         .accessibilityIdentifier("comparison.table")
     }

@@ -129,7 +129,8 @@ struct ExaminationStore {
                 let result = TestResult(testCode: code, testName: row.name.trimmed, category: row.category,
                                         panelCode: panel?.testCode, panelName: panel?.name.trimmed,
                                         groupID: row.groupID, sortIndex: sortIndex, rawValue: row.value,
-                                        unit: row.unit.trimmed, reference: row.reference, isQualitative: row.isQualitative)
+                                        unit: row.unit.trimmed, reference: row.reference, isQualitative: row.isQualitative,
+                                        note: row.note.trimmed)
                 context.insert(result)
                 result.examination = exam
                 sortIndex += 1
@@ -182,7 +183,7 @@ struct ExaminationStore {
                                testCode: result.testCode, name: result.testName, category: result.category,
                                isQualitative: result.isQualitative, value: result.rawValue, unit: result.unit,
                                lower: Fmt.optionalNumber(result.referenceLower), upper: Fmt.optionalNumber(result.referenceUpper),
-                               referenceText: result.referenceText ?? "")
+                               referenceText: result.referenceText ?? "", note: result.note)
             if row.kind == .single, let expense = expensesByGroup[result.groupID]?.first {
                 usedExpenseIDs.insert(expense.id)
                 row.price = expense.amount.editingString

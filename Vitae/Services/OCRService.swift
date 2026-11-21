@@ -54,12 +54,13 @@ struct OCRService: Sendable {
 
     func recognize(pdf document: PDFDocument) async throws -> RecognizedDocument {
         let pageCount = min(document.pageCount, pageLimit)
-        // Текстовый слой точнее OCR, если он есть.
+        // Текстовый слой точнее OCR, если он есть. Порядок текста в PDF часто не совпадает
+        // с таблицей (название в одной ячейке, значение в другой), поэтому строки собираются
+        // по положению на странице, как при распознавании изображения.
         var textLines: [String] = []
         for index in 0..<pageCount {
-            if let text = document.page(at: index)?.string {
-                textLines += text.components(separatedBy: .newlines)
-            }
+            guard let page = document.page(at: index) else { continue }
+            textLines += Self.textLayerRows(page)
         }
         let meaningful = textLines.joined().filter { $0.isLetter || $0.isNumber }.count
         if meaningful > 40 {
@@ -109,6 +110,20 @@ struct OCRService: Sendable {
         context.scaleBy(x: scale, y: scale)
         page.draw(with: .mediaBox, to: context)
         return context.makeImage()
+    }
+
+    /// Строки текстового слоя страницы, собранные в строки таблицы по координатам.
+    static func textLayerRows(_ page: PDFPage) -> [String] {
+        let bounds = page.bounds(for: .mediaBox)
+        let lines = (page.selection(for: bounds)?.selectionsByLine() ?? []).compactMap { selection -> OCRLine? in
+            let text = (selection.string ?? "").trimmed
+            guard !text.isEmpty else { return nil }
+            return OCRLine(text: text, box: selection.bounds(for: page))
+        }
+        guard !lines.isEmpty else {
+            return (page.string ?? "").components(separatedBy: .newlines)
+        }
+        return reconstructRows(lines)
     }
 
     /// Собирает наблюдения Vision в строки таблицы: группировка по вертикали, сортировка по горизонтали.

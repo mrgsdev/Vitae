@@ -100,14 +100,14 @@ enum CSV {
 
 enum CSVExporter {
     static let resultHeaders = ["Дата", "Обследование", "Лаборатория", "Код", "Показатель", "Комплекс", "Результат",
-                                "Единица", "Нижняя граница", "Верхняя граница", "Референс", "Статус"]
+                                "Единица", "Нижняя граница", "Верхняя граница", "Референс", "Статус", "Комментарий"]
     static let expenseHeaders = ["Дата", "Название", "Категория", "Обследование", "Лаборатория", "Сумма", "Валюта"]
 
     static func results(_ results: [ResultSnapshot]) -> Data {
         let rows = results.sorted { ($0.date, $0.sortIndex) < ($1.date, $1.sortIndex) }.map { r in
             [Fmt.shortDate(r.date), r.examinationTitle, r.laboratoryName ?? "", r.testCode, r.testName, r.panelName ?? "",
              r.rawValue, r.unit, Fmt.optionalNumber(r.reference.lower), Fmt.optionalNumber(r.reference.upper),
-             r.reference.text ?? "", r.status.title]
+             r.reference.text ?? "", r.statusLabel ?? r.status.title, r.note.trimmed]
         }
         return CSV.encode(headers: resultHeaders, rows: rows)
     }
@@ -124,7 +124,7 @@ enum CSVExporter {
 // MARK: - Import
 
 enum CSVField: String, CaseIterable, Identifiable, Hashable {
-    case date, examination, laboratory, testName, value, unit, lower, upper, reference, price, currency
+    case date, examination, laboratory, testName, value, unit, lower, upper, reference, note, price, currency
 
     var id: String { rawValue }
 
@@ -139,6 +139,7 @@ enum CSVField: String, CaseIterable, Identifiable, Hashable {
         case .lower: "Нижняя граница"
         case .upper: "Верхняя граница"
         case .reference: "Референс (строкой)"
+        case .note: "Комментарий"
         case .price: "Стоимость"
         case .currency: "Валюта"
         }
@@ -157,6 +158,7 @@ enum CSVField: String, CaseIterable, Identifiable, Hashable {
         case .lower: ["нижняя граница", "мин", "min", "lower", "от"]
         case .upper: ["верхняя граница", "макс", "max", "upper", "до"]
         case .reference: ["референс", "норма", "reference", "range", "референсные значения"]
+        case .note: ["комментарий", "комментарий лаборатории", "примечание", "comment", "note"]
         case .price: ["стоимость", "цена", "сумма", "price", "cost"]
         case .currency: ["валюта", "currency"]
         }
@@ -247,7 +249,7 @@ enum CSVImporter {
                                     isQualitative: entry?.isQualitative ?? (!parsed.isNumeric && reference.text != nil),
                                     value: value, unit: cell(row, .unit).nilIfEmpty ?? entry?.unit ?? "",
                                     lower: Fmt.optionalNumber(reference.lower), upper: Fmt.optionalNumber(reference.upper),
-                                    referenceText: reference.text ?? "")
+                                    referenceText: reference.text ?? "", note: cell(row, .note))
             if let price = NumberParsing.decimal(cell(row, .price)) { entryRow.price = price.editingString }
             groups[key]?.rows.append(entryRow)
         }

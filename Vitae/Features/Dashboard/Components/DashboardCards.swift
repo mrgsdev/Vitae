@@ -177,7 +177,7 @@ struct DeviationsCard: View {
                                 }
                                 Spacer()
                                 Text("\(item.displayValue) \(item.unit)").monospacedDigit()
-                                StatusBadge(status: item.status, compact: true)
+                                StatusBadge(snapshot: item, compact: true)
                                 Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
                             }
                             .padding(.vertical, 7)
@@ -342,7 +342,7 @@ struct QuickSearchResultsView: View {
                                     Text(item.testName)
                                     Spacer()
                                     Text("\(item.displayValue) \(item.unit)").monospacedDigit()
-                                    StatusBadge(status: item.status, compact: true)
+                                    StatusBadge(snapshot: item, compact: true)
                                 }
                                 .contentShape(Rectangle())
                             }
