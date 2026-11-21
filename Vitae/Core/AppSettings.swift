@@ -14,7 +14,21 @@ enum SettingsKey {
 }
 
 enum AppSettings {
-    static var defaults: UserDefaults { .standard }
+    /// В обычном режиме — стандартные настройки. В unit-тестах и с `-uiTesting` — отдельный набор,
+    /// очищаемый при запуске, чтобы не менять блокировку, валюту и копии рабочего приложения.
+    /// Аргументы запуска (`-ключ значение`) видны в любом наборе. Для `@AppStorage` набор
+    /// передаётся окнам через `.defaultAppStorage`.
+    static let defaults: UserDefaults = {
+        guard let name = suiteName(for: RunMode.current) else { return .standard }
+        // nil бывает только для bundle id и NSGlobalDomain, а имя с суффиксом режима — ни то ни другое.
+        let suite = UserDefaults(suiteName: name)!
+        suite.removePersistentDomain(forName: name)
+        return suite
+    }()
+
+    static func suiteName(for mode: RunMode) -> String? {
+        mode == .normal ? nil : "\(Bundle.main.bundleIdentifier ?? "Vitae").\(mode)"
+    }
 
     static var defaultCurrency: String {
         get { defaults.string(forKey: SettingsKey.defaultCurrency) ?? "RUB" }

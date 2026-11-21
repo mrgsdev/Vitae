@@ -33,6 +33,7 @@ struct VitaeApp: App {
         Window("Обновление Vitae", id: "update") {
             UpdateView()
                 .environment(\.locale, AppLocale.locale)
+                .defaultAppStorage(AppSettings.defaults)
         }
         .windowResizability(.contentSize)
         .defaultPosition(.center)
@@ -41,6 +42,7 @@ struct VitaeApp: App {
         Window("Версии Vitae", id: "versions") {
             VersionsView()
                 .environment(\.locale, AppLocale.locale)
+                .defaultAppStorage(AppSettings.defaults)
         }
         .windowResizability(.contentSize)
         .defaultPosition(.center)
@@ -49,6 +51,7 @@ struct VitaeApp: App {
         Window("Справка Vitae", id: "help") {
             HelpView()
                 .environment(\.locale, AppLocale.locale)
+                .defaultAppStorage(AppSettings.defaults)
         }
         .defaultSize(width: 640, height: 640)
 
@@ -67,6 +70,7 @@ private struct AppEnvironmentModifier: ViewModifier {
         content
             .environment(environment)
             .environment(\.locale, AppLocale.locale)
+            .defaultAppStorage(AppSettings.defaults)
             .modelContainer(environment.container)
             .overlay {
                 if environment.lock.isLocked {

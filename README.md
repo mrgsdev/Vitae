@@ -390,7 +390,11 @@ scripts/        make-release.sh: сборка .dmg и .zip для релиза
   (в zsh `log` — встроенная команда, поэтому путь полностью).
 - Данные приложения: `~/Library/Application Support/Vitae/` (`Vitae.store`, `Attachments/`, `Backups/`).
 - Аргументы запуска (Scheme → Run → Arguments, только Debug):
-  - `-uiTesting`: база в памяти, реальные данные не затрагиваются;
+  - `-uiTesting`: база в памяти, вложения и резервные копии — во временной папке `$TMPDIR/Vitae-uiTesting-…`,
+    настройки — в отдельном наборе `com.mrgsdev.Vitae.uiTesting`, который очищается при каждом запуске.
+    Настоящие данные, копии в `Backups/` и настройки Vitae не затрагиваются; общими с рабочим приложением
+    остаются только положение и размер окон, которые запоминает macOS. Unit-тесты изолированы так же
+    (`Vitae-unitTesting-…`, `com.mrgsdev.Vitae.unitTesting`);
   - `-uiTestingFixture`: заполнить тестовыми обследованиями;
   - `-uiTestingSection examinations`: открыть раздел (`dashboard`, `dynamics`, `comparison`, `expenses`, `catalog`, …);
   - `-uiTestingIndicator ferritin`: открыть страницу показателя в «Динамике»;

@@ -191,13 +191,13 @@ final class Updater {
 
     /// Версия, которую пользователь пропустил: сама она не предлагается, только из «Проверить обновления…».
     var skippedVersion: String? {
-        get { UserDefaults.standard.string(forKey: Self.skippedKey) }
-        set { UserDefaults.standard.set(newValue, forKey: Self.skippedKey) }
+        get { AppSettings.defaults.string(forKey: Self.skippedKey) }
+        set { AppSettings.defaults.set(newValue, forKey: Self.skippedKey) }
     }
 
     static var automaticChecksEnabled: Bool {
-        get { UserDefaults.standard.object(forKey: automaticChecksKey) as? Bool ?? true }
-        set { UserDefaults.standard.set(newValue, forKey: automaticChecksKey) }
+        get { AppSettings.defaults.object(forKey: automaticChecksKey) as? Bool ?? true }
+        set { AppSettings.defaults.set(newValue, forKey: automaticChecksKey) }
     }
 
     @ObservationIgnored private var lastCheck = Date.distantPast
@@ -429,7 +429,7 @@ final class Updater {
     /// `-updateInstallVersion 1.0` — указанную версию из списка релизов,
     /// `-updateResetSkipped YES` — снимает отметку о пропущенной версии и закрывает приложение.
     func runDebugAutomation() async {
-        let defaults = UserDefaults.standard
+        let defaults = AppSettings.defaults
         if defaults.bool(forKey: "updateResetSkipped") {
             defaults.removeObject(forKey: Self.skippedKey)
             defaults.removeObject(forKey: "settings.debugWriteProbe")

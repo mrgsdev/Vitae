@@ -25,12 +25,22 @@ enum VitaeSchema {
     }
 }
 
-/// Каталоги приложения в Application Support (внутри контейнера песочницы).
+/// Каталоги приложения в Application Support. В unit-тестах и с `-uiTesting` — временная папка
+/// процесса: копии, их ротация и вложения не касаются настоящих данных.
 enum AppDirectories {
-    static var root: URL {
+    static var root: URL { ensure(location) }
+
+    /// Путь без создания папки; выбирается один раз за запуск.
+    private static let location = rootURL(for: RunMode.current)
+
+    static func rootURL(for mode: RunMode) -> URL {
+        guard mode == .normal else {
+            return FileManager.default.temporaryDirectory
+                .appendingPathComponent("Vitae-\(mode)-\(UUID().uuidString)", isDirectory: true)
+        }
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? URL(fileURLWithPath: NSTemporaryDirectory())
-        return ensure(base.appendingPathComponent("Vitae", isDirectory: true))
+        return base.appendingPathComponent("Vitae", isDirectory: true)
     }
 
     static var attachments: URL { ensure(root.appendingPathComponent("Attachments", isDirectory: true)) }

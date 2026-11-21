@@ -7,7 +7,7 @@ import SwiftUI
 /// Работают только в Debug-сборке и только с `-uiTesting` (хранилище в памяти).
 @MainActor
 enum UITestingHooks {
-    private static var defaults: UserDefaults { .standard }
+    private static var defaults: UserDefaults { AppSettings.defaults }
     private static var isActive: Bool { RunMode.current == .uiTesting }
 
     static func applyAppearance() {

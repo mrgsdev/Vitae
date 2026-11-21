@@ -53,10 +53,7 @@ final class AppEnvironment {
         self.startupError = openError
         self.migrationNotice = notice
 
-        let attachmentsURL = mode == .normal
-            ? AppDirectories.attachments
-            : FileManager.default.temporaryDirectory.appendingPathComponent("Vitae-\(UUID().uuidString)/Attachments", isDirectory: true)
-        fileStorage = FileStorageService(baseURL: attachmentsURL)
+        fileStorage = FileStorageService(baseURL: AppDirectories.attachments)
 
         do {
             try CatalogSeeder.seedIfNeeded(context: container.mainContext)
