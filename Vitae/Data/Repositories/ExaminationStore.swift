@@ -90,16 +90,20 @@ struct ExaminationStore {
     // MARK: Сохранение
 
     /// Сохраняет черновик. `finalize == false` — сохранение как черновика (⌘S).
+    ///
+    /// Черновик с `examinationID` обновляет существующую запись. Если её уже удалили,
+    /// бросает `StoreError.notFound`, а не создаёт заново: сохранить как новую — сбросить `examinationID`.
     @discardableResult
     func save(_ draft: ExaminationDraft, finalize: Bool) throws -> Examination {
         let errors = DraftValidator.errors(in: draft)
         guard errors.isEmpty else { throw StoreError.invalidDraft(errors) }
 
         let exam: Examination
-        if let id = draft.examinationID, let existing = examination(id: id) {
+        if let id = draft.examinationID {
+            guard let existing = examination(id: id) else { throw StoreError.notFound }
             exam = existing
         } else {
-            exam = Examination(id: draft.examinationID ?? UUID(), title: "", date: draft.date)
+            exam = Examination(id: UUID(), title: "", date: draft.date)
             context.insert(exam)
         }
 

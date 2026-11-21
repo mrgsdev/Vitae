@@ -14,6 +14,15 @@ final class ExaminationEditorModel {
     var infoMessage: String?
     /// Окно закрывается после сохранения или явного отказа — автосохранение не нужно.
     var didFinish = false
+    /// Сохранение не прошло: обследование удалили, пока оно было открыто в редакторе.
+    /// Пока не `nil`, редактор ждёт выбора «Сохранить как новое» или «Закрыть».
+    var deletedExaminationSave: DeletedExaminationSave?
+
+    struct DeletedExaminationSave: Equatable {
+        let finalize: Bool
+        /// «Сохранить» закрывает окно после сохранения, ⌘S — нет.
+        let closesWindow: Bool
+    }
 
     let mode: EditorRequest.Mode
     let context: ModelContext
@@ -63,6 +72,9 @@ final class ExaminationEditorModel {
     var errorCount: Int { issues.filter { $0.severity == .error }.count }
     var markedCount: Int { draft.rows.filter(\.isMarked).count }
     var hasContent: Bool { !draft.rows.isEmpty || !draft.title.trimmed.isEmpty || !draft.comment.trimmed.isEmpty }
+    /// «Сохранить» (⌘↩) требует хотя бы одной строки — показателя или услуги. Черновик (⌘S) можно сохранить и пустым.
+    var canSave: Bool { !draft.rows.isEmpty }
+    static let emptySaveMessage = "Добавьте хотя бы один показатель или услугу. Без строк обследование можно сохранить только как черновик (⌘S)."
 
     // MARK: Каталог
 
@@ -161,21 +173,40 @@ final class ExaminationEditorModel {
 
     @discardableResult
     func save() -> Bool {
-        guard persist(finalize: true) else { return false }
+        guard canSave else {
+            errorMessage = Self.emptySaveMessage
+            return false
+        }
+        guard persist(finalize: true, closesWindow: true) else { return false }
         didFinish = true
         return true
     }
 
+    /// Ответ «Сохранить как новое» на удаление записи: повторяет прерванное сохранение новой записью.
+    @discardableResult
+    func saveDeletedAsNew() -> Bool {
+        guard let pending = deletedExaminationSave else { return false }
+        deletedExaminationSave = nil
+        isApplyingProgrammaticChange = true
+        draft.examinationID = nil
+        isApplyingProgrammaticChange = false
+        guard persist(finalize: pending.finalize, closesWindow: pending.closesWindow) else { return false }
+        if pending.closesWindow { didFinish = true }
+        return true
+    }
+
+    /// Удалённая запись не восстанавливается: `ExaminationStore.save` бросит `notFound`.
     func autosaveIfNeeded() {
         guard isDirty, !didFinish, hasContent else { return }
         saveDraft()
     }
 
     func discard() {
+        deletedExaminationSave = nil
         didFinish = true
     }
 
-    private func persist(finalize: Bool) -> Bool {
+    private func persist(finalize: Bool, closesWindow: Bool = false) -> Bool {
         do {
             let exam = try store.save(draft, finalize: finalize)
             isApplyingProgrammaticChange = true
@@ -186,6 +217,9 @@ final class ExaminationEditorModel {
             lastSavedAt = .now
             errorMessage = nil
             return true
+        } catch StoreError.notFound where draft.examinationID != nil {
+            deletedExaminationSave = DeletedExaminationSave(finalize: finalize, closesWindow: closesWindow)
+            return false
         } catch {
             errorMessage = error.localizedDescription
             return false

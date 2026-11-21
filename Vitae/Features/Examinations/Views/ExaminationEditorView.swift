@@ -102,6 +102,24 @@ struct ExaminationEditorView: View {
         } message: {
             Text(model.errorMessage ?? "")
         }
+        .alert("Обследование удалено", isPresented: Binding(get: { model.deletedExaminationSave != nil },
+                                                             set: { if !$0 { model.deletedExaminationSave = nil } })) {
+            Button("Сохранить как новое", action: saveDeletedAsNew)
+            Button("Закрыть", role: .destructive) {
+                model.discard()
+                dismiss()
+            }
+        } message: {
+            Text("Пока обследование было открыто в редакторе, его удалили. Сохраните введённые данные как новое обследование или закройте редактор без сохранения.")
+        }
+    }
+
+    private func saveDeletedAsNew() {
+        guard model.saveDeletedAsNew(), model.didFinish else { return }
+        if let id = model.draft.examinationID {
+            environment.pendingRoute = .examination(id)
+        }
+        dismiss()
     }
 
     private func finish() {
@@ -237,7 +255,8 @@ struct ExaminationEditorView: View {
                 .accessibilityIdentifier("editor.saveDraft")
             Button("Сохранить", action: finish)
                 .buttonStyle(.borderedProminent)
-                .help("Сохранить обследование (⌘↩)")
+                .disabled(!model.canSave)
+                .help(model.canSave ? "Сохранить обследование (⌘↩)" : "Добавьте показатель или услугу, чтобы сохранить обследование")
                 .accessibilityIdentifier("editor.save")
         }
         .padding(.horizontal, 16)
