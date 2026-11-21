@@ -171,7 +171,9 @@ struct ExaminationDetailView: View {
                 Divider()
                 Button("Удалить…", role: .destructive) { showDeleteConfirmation = true }
             } label: {
+                // Без своей подписи у иконки VoiceOver берёт системное имя символа — «Еще».
                 Label("Действия", systemImage: "ellipsis.circle")
+                    .accessibilityLabel("Действия")
             }
             .help("Действия с обследованием")
 

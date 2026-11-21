@@ -83,7 +83,9 @@ struct RemindersView: View {
                     .foregroundStyle(reminder.isCompleted ? Color.green : Color.secondary)
             }
             .buttonStyle(.plain)
-            .help(reminder.isCompleted ? "Вернуть в активные" : (reminder.repeatRule == .none ? "Отметить выполненным" : "Выполнено — перенести на следующий срок"))
+            .help(reminder.isCompleted ? "Снять отметку о выполнении"
+                  : (reminder.repeatRule == .none ? "Перенести напоминание в выполненные" : "Выполнено — перенести на следующий срок"))
+            .accessibilityLabel(reminder.isCompleted ? "Вернуть в активные" : "Отметить выполненным")
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(reminder.title).strikethrough(reminder.isCompleted)

@@ -206,6 +206,7 @@ struct ChangeLabel: View {
         HStack(spacing: 4) {
             Image(systemName: absolute > 0 ? "arrow.up.right" : absolute < 0 ? "arrow.down.right" : "arrow.right")
                 .imageScale(.small)
+                .accessibilityHidden(true)
             Text(Fmt.signedNumber(absolute) + (unit.isEmpty ? "" : " \(unit)"))
             if let percent {
                 Text("(\(Fmt.percent(percent)))").foregroundStyle(.secondary)
@@ -213,6 +214,7 @@ struct ChangeLabel: View {
         }
         .font(font.monospacedDigit())
         .foregroundStyle(.primary)
+        .accessibilityElement(children: .combine)
         .help("Изменение показано без оценки: рост или снижение сами по себе не означают улучшения или ухудшения.")
     }
 }

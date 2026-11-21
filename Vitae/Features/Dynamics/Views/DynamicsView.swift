@@ -186,6 +186,8 @@ private struct IndicatorCard: View {
             }
         }
         .padding(14)
+        // Один элемент: иначе подсказка карточки достаётся каждому ребёнку и звучит много раз.
+        .accessibilityElement(children: .combine)
         .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous)
