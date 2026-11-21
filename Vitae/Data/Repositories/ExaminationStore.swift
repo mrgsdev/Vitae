@@ -227,12 +227,25 @@ struct ExaminationStore {
         return try save(copy, finalize: false)
     }
 
-    /// Удаляет обследования вместе с файлами вложений.
+    /// Удаляет обследования вместе с результатами, расходами и файлами вложений.
+    ///
+    /// Связанные записи удаляются явно, до самого обследования. Если результаты были загружены
+    /// только через связь `exam.results` (так делает таблица обследований), каскадное удаление
+    /// SwiftData падает с «Unexpected backing data for snapshot creation: _FullFutureBackingData».
     func delete(_ exams: [Examination], fileStorage: FileStorageService) throws {
         for exam in exams {
-            for attachment in exam.attachments {
+            let results = exam.results
+            let expenses = exam.expenses
+            let attachments = exam.attachments
+            for attachment in attachments {
                 fileStorage.deleteFile(named: attachment.storedFileName)
             }
+            exam.results = []
+            exam.expenses = []
+            exam.attachments = []
+            results.forEach(context.delete)
+            expenses.forEach(context.delete)
+            attachments.forEach(context.delete)
             context.delete(exam)
         }
         try context.save()

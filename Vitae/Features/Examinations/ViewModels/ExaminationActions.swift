@@ -53,8 +53,25 @@ struct ExaminationActions {
         }
     }
 
+    /// Заголовок подтверждения: число нужно лишь для выбора формы, сам счёт — в тексте.
+    static func deleteTitle(count: Int) -> String {
+        count == 1 ? "Удалить обследование?" : "Удалить обследования?"
+    }
+
+    /// Пункт контекстного меню; для одной строки число не пишется — понятно, что удаляется она.
+    static func deleteMenuTitle(count: Int) -> String {
+        count == 1 ? "Удалить…" : "Удалить \(examinationsCount(count))…"
+    }
+
+    /// Глагол согласуется с числительным: «21 обследование будет удалено»,
+    /// «2 обследования / 5 обследований будут удалены».
     static func deleteMessage(count: Int) -> String {
-        let what = count == 1 ? "Обследование" : "\(count) обследований"
-        return "\(what) будет удалено вместе с результатами, расходами и прикреплёнными документами. Это действие нельзя отменить."
+        let what = count == 1 ? "Обследование" : examinationsCount(count)
+        let verb = Fmt.plural(count, one: "будет удалено", few: "будут удалены", many: "будут удалены")
+        return "\(what) \(verb) вместе с результатами, расходами и прикреплёнными документами. Это действие нельзя отменить."
+    }
+
+    private static func examinationsCount(_ count: Int) -> String {
+        Fmt.count(count, one: "обследование", few: "обследования", many: "обследований")
     }
 }

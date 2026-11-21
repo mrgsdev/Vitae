@@ -38,7 +38,7 @@ struct ExaminationsView: View {
             ExaminationInspector(examinationID: state.selection.count == 1 ? state.selection.first : nil)
                 .inspectorColumnWidth(min: 260, ideal: 300, max: 400)
         }
-        .confirmationDialog("Удалить обследования?", isPresented: $showDeleteConfirmation) {
+        .confirmationDialog(ExaminationActions.deleteTitle(count: pendingDelete.count), isPresented: $showDeleteConfirmation) {
             Button("Удалить", role: .destructive) {
                 actions.delete(ids: pendingDelete)
                 navigation.examinations.selection.subtract(pendingDelete)
@@ -152,7 +152,7 @@ struct ExaminationsView: View {
                 Button("Сравнить обследования") { navigation.compare(sorted[0].id, sorted[1].id) }
                 Divider()
             }
-            Button("Удалить \(ids.count) обследований…", role: .destructive) {
+            Button(ExaminationActions.deleteMenuTitle(count: ids.count), role: .destructive) {
                 pendingDelete = ids
                 showDeleteConfirmation = true
             }

@@ -51,12 +51,27 @@ struct ExaminationWindowView: View {
     }
 }
 
+/// Уход с карточки обследования, которое удаляют из неё самой.
+@MainActor
+enum ExaminationDetailExit {
+    /// В главном окне раздел возвращается к своему корню. В отдельном окне обследования
+    /// (`navigation == nil`) разделов нет, поэтому окно закрывается: `dismiss()` там не закрывает
+    /// окно `WindowGroup`, и после удаления оставалась заглушка «Обследование не найдено».
+    static func leave(navigation: NavigationModel?, closeWindow: () -> Void) {
+        if let navigation {
+            navigation.paths[navigation.currentSection] = []
+        } else {
+            closeWindow()
+        }
+    }
+}
+
 struct ExaminationDetailView: View {
     @Bindable var examination: Examination
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.navigationModel) private var navigation
     @Environment(\.openWindow) private var openWindow
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.dismissWindow) private var dismissWindow
 
     @State private var tab: ExaminationDetailTab = .results
     @State private var selectedResultID: UUID?
@@ -119,11 +134,10 @@ struct ExaminationDetailView: View {
         .confirmationDialog("Удалить обследование?", isPresented: $showDeleteConfirmation) {
             Button("Удалить", role: .destructive) {
                 let id = examination.id
-                if let navigation {
-                    let section = navigation.selection ?? .examinations
-                    navigation.paths[section] = []
-                } else {
-                    dismiss()
+                ExaminationDetailExit.leave(navigation: navigation) {
+                    // Кнопка срабатывает, пока лист подтверждения ещё прикреплён к окну, и такое окно
+                    // не закрывается. Закрываем на следующем проходе цикла, когда лист уже снят.
+                    DispatchQueue.main.async { dismissWindow() }
                 }
                 actions.delete(ids: [id])
             }

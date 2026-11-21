@@ -287,6 +287,31 @@ struct ExaminationStoreTests {
         #expect(try env.context.fetchCount(FetchDescriptor<Vitae.Attachment>()) == 0)
     }
 
+    /// Удаление явно убирает результаты и расходы обследования и не трогает соседние
+    /// (каскад SwiftData падал, если таблица загрузила результаты только через связь).
+    @Test func deleteRemovesOnlyOwnResultsAndExpenses() throws {
+        let env = try TestEnvironment()
+        var first = env.draft(title: "Первое", codes: ["ferritin", "vitd"])
+        first.set("ferritin", value: "40", price: "500")
+        first.set("vitd", value: "30", price: "900")
+        var second = env.draft(title: "Второе", codes: ["ferritin"])
+        second.set("ferritin", value: "55", price: "600")
+        let a = try env.store.save(first, finalize: true)
+        let b = try env.store.save(second, finalize: true)
+        _ = [a, b].map(ExaminationRow.init)
+
+        try env.store.delete([a], fileStorage: env.fileStorage)
+        #expect(env.store.allExaminations().map(\.id) == [b.id])
+        let results = try env.context.fetch(FetchDescriptor<TestResult>())
+        #expect(results.map(\.rawValue) == ["55"])
+        #expect(try env.context.fetch(FetchDescriptor<Expense>()).map(\.amount) == [600])
+
+        try BackupService(context: env.context, fileStorage: env.fileStorage).eraseAllData()
+        #expect(try env.context.fetchCount(FetchDescriptor<Examination>()) == 0)
+        #expect(try env.context.fetchCount(FetchDescriptor<TestResult>()) == 0)
+        #expect(try env.context.fetchCount(FetchDescriptor<Expense>()) == 0)
+    }
+
     @Test func customTestLifecycleKeepsHistory() throws {
         let env = try TestEnvironment()
         let catalog = CatalogStore(context: env.context)

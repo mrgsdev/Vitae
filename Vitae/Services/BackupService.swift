@@ -371,10 +371,21 @@ struct BackupService {
 
     /// Удаляет все пользовательские данные (встроенный справочник сохраняется, избранное сбрасывается).
     func eraseAllData() throws {
-        for attachment in try context.fetch(FetchDescriptor<Attachment>()) {
+        let attachments = try context.fetch(FetchDescriptor<Attachment>())
+        for attachment in attachments {
             fileStorage.deleteFile(named: attachment.storedFileName)
         }
-        try context.fetch(FetchDescriptor<Examination>()).forEach(context.delete)
+        // Связанные записи удаляются явно и раньше обследований: каскадное удаление падает,
+        // если результаты были загружены только через связь (см. ExaminationStore.delete).
+        let exams = try context.fetch(FetchDescriptor<Examination>())
+        for exam in exams {
+            exam.results = []
+            exam.expenses = []
+            exam.attachments = []
+        }
+        try context.fetch(FetchDescriptor<TestResult>()).forEach(context.delete)
+        attachments.forEach(context.delete)
+        exams.forEach(context.delete)
         try context.fetch(FetchDescriptor<Expense>()).forEach(context.delete)
         try context.fetch(FetchDescriptor<Laboratory>()).forEach(context.delete)
         try context.fetch(FetchDescriptor<Reminder>()).forEach(context.delete)
