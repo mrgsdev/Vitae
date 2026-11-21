@@ -88,6 +88,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             UNUserNotificationCenter.current().delegate = self
         }
         environment.lock.lockOnLaunchIfNeeded()
+        environment.lock.startMonitoringActivity()
         #if DEBUG
         // Отладка обновления без интерфейса: не зависит от того, открылось ли окно.
         Task { @MainActor in await Updater.shared.runDebugAutomation() }

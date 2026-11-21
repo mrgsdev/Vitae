@@ -154,9 +154,23 @@ final class NotificationService {
 final class AppLockManager {
     private(set) var isLocked = false
     var lastError: String?
-    private var resignedAt: Date?
 
-    var isEnabled: Bool { AppSettings.lockEnabled && RunMode.current == .normal }
+    /// «Блокировать после бездействия»: время считается от последнего нажатия клавиши или мыши в Vitae
+    /// (уход из приложения — тоже момент последнего действия). Раньше учитывалось только время в фоне,
+    /// и активное окно Vitae не блокировалось никогда — даже при заблокированном экране и после сна Mac.
+    @ObservationIgnored private var lastActivity = Date.now
+    @ObservationIgnored private var eventMonitor: Any?
+    @ObservationIgnored private var idleTimer: Timer?
+    @ObservationIgnored private let enabled: () -> Bool
+    @ObservationIgnored private let timeout: () -> TimeInterval
+
+    init(isEnabled: @escaping () -> Bool = { AppSettings.lockEnabled && RunMode.current == .normal },
+         timeout: @escaping () -> TimeInterval = { TimeInterval(AppSettings.lockTimeoutMinutes * 60) }) {
+        self.enabled = isEnabled
+        self.timeout = timeout
+    }
+
+    var isEnabled: Bool { enabled() }
 
     static var isAvailable: Bool {
         LAContext().canEvaluatePolicy(.deviceOwnerAuthentication, error: nil)
@@ -171,16 +185,39 @@ final class AppLockManager {
         isLocked = true
     }
 
-    func applicationDidResignActive() {
-        resignedAt = .now
+    /// Следит за нажатиями в окнах Vitae и раз в 15 секунд проверяет бездействие. Таймер не идёт во сне,
+    /// но после пробуждения первая же проверка видит, сколько прошло времени, и блокирует.
+    func startMonitoringActivity() {
+        guard eventMonitor == nil else { return }
+        let events: NSEvent.EventTypeMask = [.keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown, .scrollWheel, .leftMouseDragged]
+        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: events) { [weak self] event in
+            MainActor.assumeIsolated { self?.recordActivity() }
+            return event
+        }
+        let timer = Timer(timeInterval: 15, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.lockIfIdle() }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        idleTimer = timer
     }
 
-    func applicationDidBecomeActive() {
-        guard isEnabled, !isLocked, let resignedAt else { return }
-        if Date.now.timeIntervalSince(resignedAt) >= Double(AppSettings.lockTimeoutMinutes * 60) {
-            isLocked = true
-        }
-        self.resignedAt = nil
+    func recordActivity(at date: Date = .now) {
+        guard !isLocked else { return }
+        lastActivity = date
+    }
+
+    func lockIfIdle(now: Date = .now) {
+        guard isEnabled, !isLocked, now.timeIntervalSince(lastActivity) >= timeout() else { return }
+        isLocked = true
+    }
+
+    func applicationDidResignActive(at date: Date = .now) {
+        recordActivity(at: date)
+    }
+
+    func applicationDidBecomeActive(at date: Date = .now) {
+        lockIfIdle(now: date)
+        recordActivity(at: date)
     }
 
     func unlock() async {
@@ -190,6 +227,7 @@ final class AppLockManager {
         guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else {
             // Без средств аутентификации блокировка невозможна — не запираем пользователя.
             isLocked = false
+            recordActivity()
             return
         }
         do {
@@ -198,6 +236,8 @@ final class AppLockManager {
             if success {
                 isLocked = false
                 lastError = nil
+                // Отсчёт бездействия заново, иначе таймер сразу запер бы окно снова.
+                recordActivity()
             }
         } catch {
             lastError = "Разблокировка не выполнена"
